@@ -291,6 +291,42 @@ a:focus-visible {
   outline-offset: 4px;
 }
 
+.insight-dot {
+  position: fixed;
+  left: clamp(14px, 2vw, 26px);
+  bottom: clamp(14px, 2vw, 26px);
+  z-index: 2;
+  min-height: 10px;
+  width: 10px;
+  height: 10px;
+  display: block;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 50%;
+  background: var(--viz-point);
+  box-shadow:
+    0 0 0 1px var(--line),
+    0 0 18px var(--portrait-glow);
+  opacity: 0.32;
+  text-indent: 120%;
+  white-space: nowrap;
+}
+
+.insight-dot:hover,
+.insight-dot:focus-visible {
+  background: var(--accent);
+  box-shadow:
+    0 0 0 2px var(--focus),
+    0 0 22px var(--portrait-glow);
+  opacity: 0.72;
+  transform: scale(1.35);
+}
+
+.insight-dot:active {
+  transform: scale(1.08);
+}
+
 @keyframes portraitIn {
   from {
     opacity: 0;
