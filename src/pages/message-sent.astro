@@ -1,0 +1,18 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+  title="Message sent — Muskan Roy"
+  description="Your message to Muskan Roy has been sent."
+  path="/message-sent/"
+  noIndex={true}
+  showContact={false}
+>
+  <section class="message-confirmation shell">
+    <p class="eyebrow">Message sent</p>
+    <h1>Thanks for your message.</h1>
+    <p>I’ll reply using the email address you provided.</p>
+    <a class="button button-primary" href="/">Back to portfolio</a>
+  </section>
+</BaseLayout>

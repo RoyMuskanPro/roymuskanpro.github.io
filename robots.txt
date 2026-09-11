@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://muskanroy.com/sitemap.xml

@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GenAI Operations Analytics — Report Preview</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#121a2a;
+    --navy2:#182235;
+    --text:#1d2538;
+    --muted:#62728d;
+    --teal:#20b7a8;
+    --orange:#ff7418;
+    --blue:#2f78ff;
+    --violet:#8861ff;
+    --cyan:#0bb6b7;
+    --border:#d9dbe4;
+    --lav:#eee8fb;
+    --surface:#fff;
+    --grid:#d5dfeb;
+    --row:#f3f5f7;
+    --row2:#e9edf1;
+    --subtle:#f9f8fc;
+  }
+  *{box-sizing:border-box}
+  html{margin:0;width:100%;min-height:100%;background:#f8f7fb}
+  body{margin:0;width:100%;min-height:100vh;overflow-x:hidden;overflow-y:auto;background:#f8f7fb;font-family:'Segoe UI',Inter,Arial,sans-serif;color:var(--text);text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+  #viewport{position:relative;width:100%;min-height:100vh;overflow:hidden;background:#f8f7fb}
+  #dashboard{position:absolute;left:0;top:0;width:1433px;height:840px;transform-origin:top left;background:#f8f7fb;overflow:hidden;box-shadow:0 0 0 1px rgba(95,101,112,.55);backface-visibility:hidden}
+  .page{position:absolute;inset:0;display:none;background:#f8f7fb}
+  .page.active{display:block}
+
+  .header{position:absolute;left:0;top:0;width:1433px;height:86px;background:var(--navy);color:#fff;display:flex;align-items:center}
+  .brand{position:absolute;left:32px;top:17px;height:51px;display:flex;align-items:center;gap:26px}
+  .ai-logo{position:relative;width:42px;height:42px;color:#44b7ff}
+  .ai-logo svg{width:42px;height:42px;filter:drop-shadow(0 0 1px #78d8ff)}
+  .brand-text{font-size:36px;line-height:1;font-weight:700;letter-spacing:-1.1px;white-space:nowrap}
+  .page-title{position:absolute;left:501px;top:23px;font-size:36px;line-height:1.15;font-weight:700;color:#a9b7ce;letter-spacing:-0.8px;white-space:nowrap}
+  .header-nav{position:absolute;right:44px;top:15px;height:60px;display:flex;gap:12px}
+  .nav-btn{width:134px;height:60px;border:1px solid #b8b8b8;border-radius:9px;background:#fff;color:#1d1d1d;font-size:14px;line-height:19px;display:flex;align-items:center;justify-content:center;text-align:center;cursor:pointer}
+  .nav-btn.active{background:#d8ecff;border:2px solid #2f78ff;font-weight:700;color:#172033}
+  .nav-btn:hover{filter:brightness(.98)}
+
+  .content-area{position:absolute;left:0;top:86px;width:1433px;height:714px;background:#faf9fd}
+  .panel{position:absolute;background:#fff;border:1px solid #e1e1e6;border-radius:12px;box-shadow:0 3px 9px rgba(33,37,41,.22)}
+  .kpi{position:absolute;background:#fff;border-radius:11px;box-shadow:0 4px 13px rgba(30,38,52,.16);display:flex;flex-direction:column;justify-content:center;align-items:center}
+  .kpi.blue{border:1.6px solid var(--blue)}
+  .kpi.violet{border:1.6px solid var(--violet)}
+  .kpi.cyan{border:1.6px solid var(--cyan)}
+  .kpi.orange{border:1.6px solid var(--orange)}
+  .kpi-value{font-size:40px;font-weight:500;line-height:1;color:#192238;letter-spacing:.1px}
+  .kpi-label{margin-top:13px;font-size:18px;line-height:1;color:#657692;font-weight:400}
+  .kpi-label.bold{font-size:15px;font-weight:700;line-height:1.15}
+
+  .visual-title{position:absolute;left:10px;top:7px;font-size:21px;font-weight:600;color:#2c3044;line-height:1.2;white-space:nowrap}
+  .chart{position:absolute;min-width:0;min-height:0}
+  .chart svg{shape-rendering:geometricPrecision;text-rendering:geometricPrecision}
+  .drillable .chart{cursor:pointer}
+  .drill-hint{position:absolute;right:12px;top:8px;z-index:5;display:flex;align-items:center;gap:5px;color:#667085;font-size:11px;font-weight:600;line-height:1;letter-spacing:.05px;pointer-events:none;opacity:.82}
+  .drill-hint .drill-icon{font-size:13px;color:#3e6fae;transform:translateY(-.5px)}
+
+  .sidepane{position:absolute;left:1177px;top:12px;width:246px;height:681px;background:#fff;border:1px solid #e4deef;border-radius:13px;box-shadow:none;padding:0 10px;overflow:hidden}
+  .side-title{height:48px;border-bottom:2px solid #e5dff4;font-size:21px;display:flex;align-items:center;color:#282b3e;padding-left:4px;position:relative}
+  .side-title::after{content:'';position:absolute;right:5px;top:11px;width:9px;height:25px;background:#bfbfbf}
+  .filter-box{width:100%;margin-top:9px;background:#fbfbfd;padding:4px 10px 8px}
+  .filter-label{font-size:15px;font-weight:600;margin:4px 0 6px}
+  .date-row{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(0,.88fr);gap:8px;width:100%}
+  .date-input{width:100%;min-width:0;height:35px;border:1px solid #e4e4ea;background:#fff;padding:7px 7px;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:space-between;gap:4px;color:#171717;white-space:nowrap;overflow:hidden}
+  .date-input .cal{color:#274576;font-size:13px}
+  .rangebar{position:relative;height:27px;margin:2px 0 0}
+  .rangebar .track{position:absolute;left:0;right:0;top:13px;height:4px;background:#77747c;border-radius:2px}
+  .rangebar .thumb{position:absolute;top:4px;width:6px;height:20px;border-radius:2px;background:#77747c}
+  .rangebar .thumb.r{right:0}.rangebar .thumb.l{left:0}
+  .select-wrap{position:relative}
+  .slicer-select{width:100%;height:31px;border:1px solid #e1e2e8;background:#fff;padding:0 34px 0 7px;font-size:15px;color:#383838;appearance:none;cursor:pointer}
+  .select-wrap:after{content:'';position:absolute;right:10px;top:9px;width:9px;height:9px;border-right:1.5px solid #2f3040;border-bottom:1.5px solid #2f3040;transform:rotate(45deg);pointer-events:none}
+  .insights{margin-top:12px}
+  .insight-body{width:100%;font-size:15px;line-height:1.35;padding:8px 7px 0 17px;color:#383838;overflow-wrap:break-word}
+  .insight-body ul{margin:0;padding-left:18px}
+  .insight-body li{margin:2px 0}
+  .insight-body strong{font-weight:700}
+  .disclosure{position:absolute;left:11px;right:11px;bottom:9px;border-top:2px solid #e4dff0;padding-top:10px;font-size:11.5px;line-height:1.35;color:#59607a;overflow-wrap:break-word}
+  .disclosure .ico{color:#6c5ce7;font-size:12px;margin-right:4px}
+
+  .matrix-wrap{position:absolute;left:10px;right:10px;top:36px;bottom:11px;overflow:hidden}
+  .matrix{width:100%;border-collapse:collapse;font-size:14px;table-layout:fixed}
+  .matrix thead th{height:36px;background:#192338;color:#fff;border-right:1px solid #435064;padding:0 8px;text-align:center;font-size:15px;font-weight:700;white-space:nowrap}
+  .matrix thead th:first-child{text-align:left}
+  .matrix tbody td{height:25px;border-bottom:1px solid #d7dde3;padding:0 8px;text-align:center;color:#30353f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .matrix tbody tr:nth-child(even) td{background:#f3f5f7}
+  .matrix tbody td:first-child{text-align:left;background:#dfe9ea;border-right:1px solid #9fb8bb}
+  .matrix tbody tr.group td{font-weight:700;background:#eef0f2;color:#171a1f}
+  .matrix tbody tr.group td:first-child{background:#d8e5e5}
+  .matrix tbody tr.total td{font-weight:700;background:#eef0f2;border-top:1px solid #c7cdd3}
+  .matrix tbody tr.total td:first-child{background:#d8e5e5}
+  .indent{padding-left:28px!important}
+  .expander{display:inline-block;width:12px;height:12px;border:1px solid #7c858c;color:#535b60;font-size:10px;line-height:9px;text-align:center;margin-right:7px;vertical-align:middle}
+
+  .performance-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:14px}
+  .performance-table thead th{background:#1a2438;color:white;height:36px;border-right:1px solid #435063;padding:0 8px;white-space:nowrap;text-align:left}
+  .performance-table td{height:26px;border-bottom:1px solid #d9dde3;padding:0 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#373c45}
+  .performance-table tbody tr:nth-child(even) td{background:#f3f5f7}
+  .performance-table th.num,.performance-table td.num{text-align:right}
+  .status-ok{color:#19a33f!important}.status-bad{color:#ff3b30!important}.status-warn{color:#ff6f00!important}
+
+  .scrollbar-v{position:absolute;right:9px;top:39px;width:9px;bottom:39px;background:#efefef;border-radius:5px}
+  .scrollbar-v span{position:absolute;left:1px;top:0;width:7px;height:148px;border-radius:4px;background:#9d9d9d}
+  .scrollbar-h{position:absolute;left:38px;right:59px;bottom:12px;height:8px;background:#eee;border-radius:6px}
+  .scrollbar-h span{display:block;width:64%;height:8px;background:#a8a8a8;border-radius:6px}
+
+  .pagination{position:absolute;left:43px;bottom:0;height:30px;display:flex;align-items:flex-end;gap:2px}
+  .page-num{width:46px;height:27px;border:1px solid #8f9299;border-bottom:none;background:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;color:#575d66}
+  .page-num.active{background:#2a2a2d;color:#fff;border-color:#2a2a2d}
+  .next-arrow{width:38px;height:27px;display:flex;align-items:center;justify-content:center;font-size:24px;color:#777}
+
+  .tabs{position:absolute;left:0;bottom:0;width:1433px;height:40px;background:#f7f7f7;border-top:1px solid #d1d1d1;display:flex;align-items:stretch}
+  .tab-left{width:84px;border-right:1px solid #c8c8c8;display:flex;align-items:center;gap:18px;padding-left:16px;color:#9c9c9c}
+  .tab-left .mobile{color:#1286c8;font-size:17px}
+  .tab-left .arrows{font-size:14px;letter-spacing:7px;color:#c5c5c5}
+  .tab{height:40px;min-width:142px;padding:0 18px;display:flex;align-items:center;justify-content:center;border-right:1px solid #d1d1d1;background:#fff;font-size:12px;color:#1c1c1c;cursor:pointer;position:relative;white-space:nowrap}
+  .tab.active{border-bottom:4px solid #158c83}
+  .tab .close{position:absolute;right:5px;top:2px;font-size:12px}
+  .tab.drill{min-width:190px}
+  .tab-plus{width:39px;height:38px;background:#138777;color:#fff;font-size:24px;font-weight:700;display:flex;align-items:center;justify-content:center}
+
+  /* page 4 */
+  .detail-header .page-title{left:501px;color:#aab7cb}
+  .detail-select{position:absolute;top:19px;width:216px;height:42px;border:1px solid #9ba6b9;background:#111a2a;color:#aab7cb;font-family:'Segoe UI',Inter,Arial,sans-serif;font-size:20px;font-weight:400;line-height:40px;padding:0 34px 1px 8px;appearance:none;-webkit-appearance:none;white-space:nowrap;cursor:pointer;z-index:2}
+  .detail-select.log{left:878px}.detail-select.model{left:1148px}
+  .detail-select option{background:#fff;color:#202737;font-size:16px}
+  .detail-arrow{position:absolute;top:28px;width:15px;height:15px;border-right:2px solid #8fa0ba;border-bottom:2px solid #8fa0ba;transform:rotate(45deg);pointer-events:none;z-index:3}
+  .detail-arrow.a{left:1065px}.detail-arrow.b{left:1334px}
+  .detail-kpi .kpi-label{font-size:15px;font-weight:700;color:#65728b;margin-top:11px}
+
+  .legend-mini{position:absolute;left:15px;top:42px;font-size:12px;color:#757b84;display:flex;gap:13px;align-items:center}
+  .legend-mini span:before{content:'';display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:3px;vertical-align:-1px}
+  .legend-mini .teal:before{background:var(--teal)}
+  .legend-mini .orange:before{background:var(--orange)}
+
+  .tooltip-note{font-size:12px;color:#6b6f7c}
+</style>
+</head>
+<body>
+<div id="viewport">
+<div id="dashboard">
+
+  <div class="page active" id="page-overview" data-page="overview">
+    <div class="header">
+      <div class="brand"><div class="ai-logo" id="logo1"></div><div class="brand-text">GEN AI OPERATIONS</div></div>
+      <div class="page-title">EXECUTIVE OVERVIEW</div>
+      <div class="header-nav">
+        <button class="nav-btn active" data-target="overview">Executive<br>Overview</button>
+        <button class="nav-btn" data-target="usage">Usage &amp; Assumed<br>Cost</button>
+        <button class="nav-btn" data-target="latency">Latency and<br>Reliability</button>
+      </div>
+    </div>
+    <div class="content-area">
+      <div class="kpi blue" style="left:16px;top:13px;width:274px;height:139px"><div class="kpi-value" id="ov-requests">4.997M</div><div class="kpi-label">Total Requests</div></div>
+      <div class="kpi violet" style="left:312px;top:13px;width:273px;height:139px"><div class="kpi-value" id="ov-tokens">2.92B</div><div class="kpi-label">Total Tokens</div></div>
+      <div class="kpi cyan" style="left:603px;top:13px;width:272px;height:139px"><div class="kpi-value" id="ov-cost">$1.64M</div><div class="kpi-label">Estimated Cost</div></div>
+      <div class="kpi orange" style="left:895px;top:13px;width:272px;height:139px"><div class="kpi-value" id="ov-breaches">10K</div><div class="kpi-label">SLA Breaches</div></div>
+
+      <div class="panel" style="left:16px;top:168px;width:565px;height:254px"><div class="visual-title">Weekly Request Volume</div><div class="chart" id="ov-weekly" style="left:10px;top:36px;width:545px;height:208px"></div></div>
+      <div class="panel drillable" style="left:602px;top:168px;width:565px;height:254px"><div class="visual-title">Request Distribution by Model &amp; Log Type</div><div class="drill-hint"><span class="drill-icon">↗</span>Drill through</div><div class="chart" id="ov-dist" style="left:9px;top:45px;width:547px;height:185px" title="Select a model and log type segment to view its details"></div></div>
+
+      <div class="panel" style="left:16px;top:437px;width:1151px;height:268px"><div class="visual-title">Performance Details</div>
+        <div class="matrix-wrap"><table class="matrix" id="ov-matrix">
+          <colgroup><col style="width:155px"><col style="width:119px"><col style="width:184px"><col style="width:145px"><col style="width:145px"><col style="width:145px"><col style="width:145px"><col></colgroup>
+          <thead><tr><th>Log Type</th><th>Requests</th><th>Tokens</th><th>Avg Elapsed (s)</th><th>P50 Elapsed (s)</th><th>P95 Elapsed (s)</th><th>Failure Rate %</th><th>SLA Breach %</th></tr></thead>
+          <tbody id="ov-matrix-body"></tbody>
+        </table></div>
+      </div>
+      <aside class="sidepane">
+        <div class="side-title">FILTERS</div>
+        <div class="filter-box"><div class="filter-label">Date</div><div class="date-row"><div class="date-input">14-08-2025 <span class="cal">▦</span></div><div class="date-input">01-12-2025</div></div><div class="rangebar"><span class="track"></span><span class="thumb l"></span><span class="thumb r"></span></div></div>
+        <div class="filter-box"><div class="filter-label">Model Name</div><div class="select-wrap"><select class="slicer-select model-slicer" data-page="overview"><option>All</option><option>ChatGPT</option><option>GPT-4</option></select></div></div>
+        <div class="filter-box"><div class="filter-label">Log Type</div><div class="select-wrap"><select class="slicer-select log-slicer" data-page="overview"><option>All</option><option>API Log</option><option>Conversation Log</option></select></div></div>
+        <div class="insights"><div class="side-title">KEY FINDINGS</div><div class="insight-body"><ul><li><strong>Highest SLA breach rate:</strong> GPT-4 Conversation traffic at 7.64%</li><li><strong>Largest cost share:</strong> API traffic at ~$1.47M in estimated cost</li><li><strong>Largest workload:</strong> ChatGPT at ~85% of requests</li></ul></div></div>
+        <div class="disclosure"><span class="ico">ⓘ</span>Assumptions<br>Dates are synthetic. Cost estimates use fictional rates for this case study.</div>
+      </aside>
+    </div>
+    <div class="tabs"></div>
+  </div>
+
+  <div class="page" id="page-usage" data-page="usage">
+    <div class="header">
+      <div class="brand"><div class="ai-logo" id="logo2"></div><div class="brand-text">GEN AI OPERATIONS</div></div>
+      <div class="page-title" style="left:509px">USAGE &amp; ASSUMED COST</div>
+      <div class="header-nav" style="right:21px">
+        <button class="nav-btn" data-target="overview">Executive Overview</button>
+        <button class="nav-btn active" data-target="usage">Usage &amp; Assumed<br>Cost</button>
+        <button class="nav-btn" data-target="latency">Latency and<br>Reliability</button>
+      </div>
+    </div>
+    <div class="content-area">
+      <div class="kpi blue" style="left:11px;top:10px;width:273px;height:138px"><div class="kpi-value" id="us-reqtokens">2,507M</div><div class="kpi-label">Request Tokens</div></div>
+      <div class="kpi violet" style="left:304px;top:10px;width:273px;height:138px"><div class="kpi-value" id="us-resptokens">414M</div><div class="kpi-label">Response Tokens</div></div>
+      <div class="kpi cyan" style="left:598px;top:10px;width:272px;height:138px"><div class="kpi-value" id="us-avg">584.63</div><div class="kpi-label">Avg Tokens/Request</div></div>
+      <div class="kpi orange" style="left:891px;top:10px;width:272px;height:138px"><div class="kpi-value" id="us-cpr">$0.33</div><div class="kpi-label">Cost/Request</div></div>
+
+      <div class="panel" style="left:11px;top:164px;width:554px;height:254px"><div class="visual-title">Weekly Token Usage</div><div class="chart" id="us-weekly" style="left:8px;top:36px;width:537px;height:207px"></div></div>
+      <div class="panel" style="left:576px;top:164px;width:290px;height:254px"><div class="visual-title">Token Usage by Model</div><div class="chart" id="us-donut-tokens" style="left:4px;top:43px;width:282px;height:202px"></div></div>
+      <div class="panel" style="left:875px;top:164px;width:289px;height:254px"><div class="visual-title">Estimated Cost by Model</div><div class="chart" id="us-donut-cost" style="left:4px;top:43px;width:281px;height:202px"></div></div>
+
+      <div class="panel" style="left:11px;top:429px;width:1152px;height:269px"><div class="visual-title">Usage Details</div><div class="matrix-wrap" style="top:36px"><table class="matrix"><colgroup><col style="width:155px"><col style="width:135px"><col style="width:220px"><col style="width:220px"><col style="width:190px"><col></colgroup><thead><tr><th>Log Type</th><th>Requests</th><th>Request Tokens</th><th>Response Tokens</th><th>Total Tokens</th><th>Estimated Cost</th></tr></thead><tbody id="us-matrix-body"></tbody></table></div></div>
+
+      <aside class="sidepane" style="left:1174px;top:10px;height:680px">
+        <div class="side-title">FILTERS</div>
+        <div class="filter-box"><div class="filter-label">Date</div><div class="date-row"><div class="date-input">14-08-2025 <span class="cal">▦</span></div><div class="date-input">01-12-2025</div></div><div class="rangebar"><span class="track"></span><span class="thumb l"></span><span class="thumb r"></span></div></div>
+        <div class="filter-box"><div class="filter-label">Model Name</div><div class="select-wrap"><select class="slicer-select model-slicer" data-page="usage"><option>All</option><option>ChatGPT</option><option>GPT-4</option></select></div></div>
+        <div class="filter-box"><div class="filter-label">Log Type</div><div class="select-wrap"><select class="slicer-select log-slicer" data-page="usage"><option>All</option><option>API Log</option><option>Conversation Log</option></select></div></div>
+        <div class="insights"><div class="side-title">KEY FINDINGS</div><div class="insight-body"><ul><li>Request tokens account for <strong>~86% of all tokens used</strong></li><li>GPT-4 accounts for <strong>15% of requests, 34% of tokens, and 39% of estimated cost</strong></li><li>API workloads account for <strong>~90% of estimated cost</strong></li></ul></div></div>
+        <div class="disclosure"><span class="ico">ⓘ</span>Assumptions<br>Cost estimates use fictional rates, not actual provider billing.</div>
+      </aside>
+    </div>
+    <div class="tabs"></div>
+  </div>
+
+  <div class="page" id="page-latency" data-page="latency">
+    <div class="header">
+      <div class="brand"><div class="ai-logo" id="logo3"></div><div class="brand-text">GEN AI OPERATIONS</div></div>
+      <div class="page-title" style="left:501px">LATENCY &amp; RELIABILITY</div>
+      <div class="header-nav" style="right:35px">
+        <button class="nav-btn" data-target="overview">Executive Overview</button>
+        <button class="nav-btn" data-target="usage">Usage &amp; Assumed<br>Cost</button>
+        <button class="nav-btn active" data-target="latency">Latency and<br>Reliability</button>
+      </div>
+    </div>
+    <div class="content-area">
+      <div class="kpi blue" style="left:11px;top:12px;width:273px;height:138px"><div class="kpi-value" id="la-avg">2.70</div><div class="kpi-label bold">Avg Elapsed Time (sec)</div></div>
+      <div class="kpi violet" style="left:304px;top:12px;width:273px;height:138px"><div class="kpi-value" id="la-p95">15.00</div><div class="kpi-label bold">P95 Elapsed Time (sec)</div></div>
+      <div class="kpi cyan" style="left:598px;top:12px;width:272px;height:138px"><div class="kpi-value" id="la-sd">9.75</div><div class="kpi-label bold">Elapsed Time S.D. (sec)</div></div>
+      <div class="kpi orange" style="left:891px;top:12px;width:272px;height:138px"><div class="kpi-value" id="la-fail">3.83%</div><div class="kpi-label bold">Request Failure Rate (%)</div></div>
+
+      <div class="panel" style="left:11px;top:161px;width:579px;height:256px"><div class="visual-title">Weekly Elapsed Time Trend (sec)</div><div class="chart" id="la-weekly" style="left:10px;top:36px;width:560px;height:209px"></div></div>
+      <div class="panel" style="left:609px;top:161px;width:554px;height:256px"><div class="visual-title">Request Distribution by Elapsed Time</div><div class="chart" id="la-dist" style="left:10px;top:36px;width:535px;height:209px"></div></div>
+
+      <div class="panel" style="left:11px;top:432px;width:1153px;height:263px"><div class="visual-title">Request Performance Details</div>
+        <div style="position:absolute;left:12px;right:27px;top:36px;bottom:31px;overflow:hidden"><table class="performance-table"><colgroup><col style="width:79px"><col style="width:122px"><col style="width:105px"><col style="width:180px"><col style="width:143px"><col style="width:160px"><col style="width:163px"><col></colgroup><thead><tr><th>Row ID</th><th>Session ID</th><th>Model</th><th>Log Type</th><th class="num">Elapsed Seconds</th><th class="num">SLA Limit (sec)</th><th>SLA Status</th><th>Latency Health</th></tr></thead><tbody id="la-table-body"></tbody></table></div>
+        <div class="scrollbar-v"><span></span></div><div class="pagination"><div class="page-num active">1</div><div class="page-num">2</div><div class="page-num">3</div><div class="page-num">4</div><div class="page-num">5</div><div class="page-num">6</div><div class="page-num">7</div><div class="page-num">8</div><div class="page-num">9</div><div class="page-num">10</div><div class="page-num">11</div><div class="page-num">12</div><div class="page-num">13</div><div class="page-num">14</div><div class="next-arrow">›</div></div>
+      </div>
+
+      <aside class="sidepane" style="left:1174px;top:12px;height:697px">
+        <div class="side-title">FILTERS</div>
+        <div class="filter-box"><div class="filter-label">Date</div><div class="date-row"><div class="date-input">14-08-2025 <span class="cal">▦</span></div><div class="date-input">01-12-2025</div></div><div class="rangebar"><span class="track"></span><span class="thumb l"></span><span class="thumb r"></span></div></div>
+        <div class="filter-box"><div class="filter-label">Model Name</div><div class="select-wrap"><select class="slicer-select model-slicer" data-page="latency"><option>All</option><option>ChatGPT</option><option>GPT-4</option></select></div></div>
+        <div class="filter-box"><div class="filter-label">Log Type</div><div class="select-wrap"><select class="slicer-select log-slicer" data-page="latency"><option>All</option><option>API Log</option><option>Conversation Log</option></select></div></div>
+        <div class="insights"><div class="side-title">KEY FINDINGS</div><div class="insight-body"><ul><li>Most requests complete in <strong>0–2 sec</strong></li><li>Overall P95 elapsed time is <strong>15 sec</strong></li><li>GPT-4 Conversation traffic has the longest response times; API ChatGPT has the highest failure rate.</li></ul></div></div>
+        <div class="disclosure"><span class="ico">ⓘ</span>Definitions<br>• Elapsed time covers the full request,<br>&nbsp;&nbsp;not TTFT.<br>• SLA targets are fictional.<br>• Failure means zero response tokens.</div>
+      </aside>
+    </div>
+    <div class="tabs"></div>
+  </div>
+
+  <div class="page" id="page-detail" data-page="detail">
+    <div class="header detail-header">
+      <div class="brand"><div class="ai-logo" id="logo4"></div><div class="brand-text">GEN AI OPERATIONS</div></div>
+      <div class="page-title">DETAILED ANALYSIS</div>
+      <select id="detail-log" class="detail-select log"><option>Conversation Log</option><option>API Log</option></select><span class="detail-arrow a"></span>
+      <select id="detail-model" class="detail-select model"><option>GPT-4</option><option>ChatGPT</option></select><span class="detail-arrow b"></span>
+    </div>
+    <div class="content-area">
+      <div class="kpi blue detail-kpi" style="left:11px;top:10px;width:269px;height:138px"><div class="kpi-value" id="de-requests">75.50K</div><div class="kpi-label">Total Requests</div></div>
+      <div class="kpi violet detail-kpi" style="left:297px;top:10px;width:268px;height:138px"><div class="kpi-value" id="de-tokens">0.13B</div><div class="kpi-label">Total Tokens</div></div>
+      <div class="kpi violet detail-kpi" style="left:583px;top:10px;width:268px;height:138px"><div class="kpi-value" id="de-avg">14.53</div><div class="kpi-label">Avg Elapsed Time (sec)</div></div>
+      <div class="kpi orange detail-kpi" style="left:869px;top:10px;width:267px;height:138px"><div class="kpi-value" id="de-p95">40.00</div><div class="kpi-label">P95 Elapsed Time (sec)</div></div>
+      <div class="kpi blue detail-kpi" style="left:1154px;top:10px;width:268px;height:138px"><div class="kpi-value" id="de-sla">7.64%</div><div class="kpi-label">SLA Breach %</div></div>
+
+      <div class="panel" style="left:10px;top:164px;width:474px;height:253px"><div class="visual-title">Weekly Request Volume</div><div class="chart" id="de-weekly" style="left:10px;top:36px;width:455px;height:205px"></div></div>
+      <div class="panel" style="left:494px;top:164px;width:474px;height:253px"><div class="visual-title">Weekly Elapsed Time Trend (sec)</div><div class="chart" id="de-latency" style="left:10px;top:36px;width:455px;height:205px"></div></div>
+      <div class="panel" style="left:978px;top:164px;width:444px;height:253px"><div class="visual-title">SLA Status</div><div class="chart" id="de-sla-chart" style="left:10px;top:36px;width:425px;height:205px"></div></div>
+
+      <div class="panel" style="left:10px;top:427px;width:474px;height:255px"><div class="visual-title">Usage &amp; Estimated Cost Trend</div><div class="chart" id="de-usage-cost" style="left:10px;top:36px;width:455px;height:202px"></div><div class="scrollbar-h"><span></span></div></div>
+      <div class="panel" style="left:494px;top:427px;width:928px;height:255px"><div class="visual-title">Request Performance Details</div>
+        <div style="position:absolute;left:11px;right:18px;top:37px;bottom:20px;overflow:hidden"><table class="performance-table" style="min-width:1210px"><colgroup><col style="width:80px"><col style="width:135px"><col style="width:106px"><col style="width:210px"><col style="width:170px"><col style="width:178px"><col style="width:145px"><col style="width:150px"></colgroup><thead><tr><th>Row ID</th><th>Session ID</th><th>Model</th><th>Log Type</th><th class="num">Request Tokens</th><th class="num">Response Tokens</th><th class="num">Total Tokens</th><th>Elapsed Seconds</th></tr></thead><tbody id="de-table-body"></tbody></table></div>
+        <div class="scrollbar-v" style="top:39px;bottom:31px"><span style="height:36px"></span></div><div class="scrollbar-h" style="left:15px;right:55px"><span style="width:55%"></span></div>
+      </div>
+    </div>
+    <div class="tabs"></div>
+  </div>
+</div>
+</div>
+
+<script>
+const C = {teal:'#20b7a8', orange:'#ff7418', navy:'#182238', grid:'#d5dfeb', text:'#606771'};
+const weeks = ['9 Aug','16 Aug','23 Aug','30 Aug','6 Sep','13 Sep','20 Sep','27 Sep','4 Oct','11 Oct','18 Oct','25 Oct','1 Nov','8 Nov','15 Nov','22 Nov','29 Nov'];
+const dashboardData = {
+  combinations: {
+    'API Log|ChatGPT': {requests:4070058, tokens:1.76e9, requestTokens:1531e6, responseTokens:229e6, cost:0.922e6, avg:2.13, p50:0, p95:12, failure:4.29, sla:0.02, sd:5.7},
+    'API Log|GPT-4': {requests:693061, tokens:0.875e9, requestTokens:754e6, responseTokens:122e6, cost:0.549e6, avg:4.61, p50:1, p95:18, failure:2.13, sla:0.28, sd:8.4},
+    'Conversation Log|ChatGPT': {requests:158117, tokens:0.155e9, requestTokens:124e6, responseTokens:31e6, cost:0.084e6, avg:3.41, p50:2, p95:8, failure:0.53, sla:0.91, sd:5.3},
+    'Conversation Log|GPT-4': {requests:75500, tokens:0.131e9, requestTokens:98e6, responseTokens:32e6, cost:0.085e6, avg:14.53, p50:11, p95:40, failure:1.35, sla:7.64, sd:18.1}
+  },
+  overviewWeekly:[0.03,0.15,0.38,0.38,0.94,0.07,0.24,0.75,0.27,0.16,0.03,0.20,0.12,0.61,0.47,0.20,0.03],
+  tokenWeekly:{req:[0.02,0.10,0.15,0.16,0.35,0.04,0.14,0.33,0.14,0.08,0.03,0.22,0.18,0.17,0.16,0.17,0.03],resp:[0.003,0.012,0.021,0.010,0.045,0.009,0.013,0.041,0.025,0.013,0.004,0.008,0.013,0.035,0.046,0.070,0.011]},
+  latencyWeekly:{avg:[14,16,13,1.2,1.1,4.0,1.7,1.4,1.5,1.2,1.0,5.0,1.2,2.6,0.9,2.1,6.1,6.5], p95:[44,46,43,2,2,15,4,4,5,5,18,4,12,3,11,3,16,22]},
+  detailWeekly:[1.0,3.4,2.5,3.5,3.3,3.0,3.1,4.3,4.3,5.0,4.8,5.0,7.8,8.7,6.3,7.0,2.3],
+  detailLatency:{avg:[55,47,35,17,15,18,12,12,13,9,15,13,10,8,9,8,8], p95:[150,130,96,48,38,41,28,29,30,25,31,29,26,22,23,22,22]},
+  detailCost:[1.2,4.0,3.2,5.0,4.1,3.1,3.4,6.0,5.9,6.0,6.1,8.0,13.0,15.8,11.3,12.8,5.0],
+  latencyRows:[
+    ['1','1722ac82-0a...','GPT-4','Conversation Log','43.00','30','Breached','SLA Breach'],
+    ['2','d5983bf9-4b...','CHATGPT','Conversation Log','2.00','15','Within SLA','Healthy'],
+    ['3','a5c69b35-4f...','GPT-4','Conversation Log','8.00','30','Within SLA','Healthy'],
+    ['4','8b74c7d8-16...','CHATGPT','Conversation Log','3.00','15','Within SLA','Healthy'],
+    ['5','1722ac82-0a...','GPT-4','Conversation Log','26.00','30','Within SLA','Near SLA Limit'],
+    ['6','c6f7a15f-471...','CHATGPT','Conversation Log','2.00','15','Within SLA','Healthy'],
+    ['7','8b74c7d8-16...','CHATGPT','Conversation Log','3.00','15','Within SLA','Healthy']
+  ],
+  detailRows:[
+    ['1','1722ac82-0a...','GPT-4','Conversation Log','906','446','1352','43.00'],
+    ['3','a5c69b35-4f...','GPT-4','Conversation Log','1779','123','1902','8.00'],
+    ['5','1722ac82-0a...','GPT-4','Conversation Log','1631','282','1913','26.00'],
+    ['20','8c89ec7b-cb...','GPT-4','Conversation Log','37','472','509','8.00'],
+    ['21','56e38018-bb...','GPT-4','Conversation Log','5299','541','5840','16.00'],
+    ['24','aa037ed8-0e...','GPT-4','Conversation Log','12','87','99','11.00']
+  ]
+};
+
+function logoSVG(){return `<svg viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke="#32b6ff" stroke-width="3"><rect x="18" y="18" width="28" height="28" rx="8"/><path d="M26 7v9M38 7v9M26 48v9M38 48v9M7 26h9M7 38h9M48 26h9M48 38h9M13 13l6 6M51 13l-6 6M13 51l6-6M51 51l-6-6"/><circle cx="32" cy="32" r="21" stroke-dasharray="2 4"/></g><text x="32" y="38" text-anchor="middle" font-family="Segoe UI,Arial" font-size="20" font-weight="700" fill="#eaf8ff">AI</text></svg>`}
+['logo1','logo2','logo3','logo4'].forEach(id=>document.getElementById(id).innerHTML=logoSVG());
+
+function fmtReq(v, detail=false){if(detail) return v>=1e6?(v/1e6).toFixed(2)+'M':(v/1e3).toFixed(2)+'K'; return (v/1e6).toFixed(3)+'M'}
+function fmtTokens(v){return v>=1e9?(v/1e9).toFixed(2)+'B':Math.round(v/1e6)+'M'}
+function fmtCost(v){return '$'+(v/1e6).toFixed(2)+'M'}
+function aggregate(model='All',log='All'){
+  const rows=Object.entries(dashboardData.combinations).filter(([k])=>{const [l,m]=k.split('|');return (model==='All'||m===model)&&(log==='All'||l===log)}).map(([,v])=>v);
+  const sum=k=>rows.reduce((a,b)=>a+b[k],0);
+  const req=sum('requests')||1;
+  const weighted=k=>rows.reduce((a,b)=>a+b[k]*b.requests,0)/req;
+  return {requests:sum('requests'),tokens:sum('tokens'),requestTokens:sum('requestTokens'),responseTokens:sum('responseTokens'),cost:sum('cost'),avg:weighted('avg'),p50:weighted('p50'),p95:weighted('p95'),failure:weighted('failure'),sla:weighted('sla'),sd:weighted('sd')};
+}
+
+function baseAxis(){return {axisLine:{show:false},axisTick:{show:false},axisLabel:{color:'#6f6f73',fontSize:12},splitLine:{show:true,lineStyle:{color:C.grid,type:'dotted'}}}}
+function xAxisWeeks(){return {type:'category',data:weeks,boundaryGap:true,axisLine:{show:false},axisTick:{show:false},axisLabel:{color:'#6f6f73',fontSize:11.5,rotate:38,interval:0,margin:9,hideOverlap:false,formatter:(v)=>v.length>5?v.slice(0,6)+'...':v},splitLine:{show:false}}}
+function chart(id,opt){const el=document.getElementById(id);const inst=echarts.init(el,null,{renderer:'svg'});inst.setOption(opt);return inst}
+let charts={};
+
+function commonTooltip(unit='') {return {trigger:'axis',backgroundColor:'rgba(24,32,47,.94)',borderWidth:0,textStyle:{color:'#fff',fontSize:12},formatter:p=>p.map(x=>`${x.marker}${x.seriesName || x.name}: <b>${x.value}${unit}</b>`).join('<br>')}}
+
+function initCharts(){
+  charts.ovWeekly=chart('ov-weekly',{animation:false,grid:{left:49,right:18,top:11,bottom:60},tooltip:commonTooltip('M'),xAxis:xAxisWeeks(),yAxis:{type:'value',min:0,max:1,interval:.5,...baseAxis(),axisLabel:{color:'#776d68',fontSize:12,formatter:v=>v.toFixed(1)+'M'}},series:[{name:'Requests',type:'line',data:dashboardData.overviewWeekly,smooth:false,symbol:'circle',symbolSize:7,lineStyle:{color:C.teal,width:3},itemStyle:{color:C.teal}}]});
+  charts.ovDist=chart('ov-dist',{animation:false,grid:{left:68,right:16,top:23,bottom:36},tooltip:{trigger:'item',backgroundColor:'rgba(24,32,47,.96)',borderWidth:0,padding:[9,11],textStyle:{color:'#fff',fontSize:12},formatter:p=>`<b>${p.name}</b><br>${p.marker}${p.seriesName}: <b>${Number(p.value).toFixed(2)}%</b><br><span style="color:#c8d4e6">↗ Select to view details</span>`},legend:{left:0,bottom:0,itemWidth:11,itemHeight:11,icon:'circle',textStyle:{fontSize:11,color:'#70757f'},data:['API Log','Conversation Log']},xAxis:{type:'value',max:100,show:false},yAxis:{type:'category',data:['GPT-4','ChatGPT'],axisLine:{show:false},axisTick:{show:false},axisLabel:{color:'#6f6f73',fontSize:12}},series:[{name:'API Log',type:'bar',stack:'total',barWidth:36,cursor:'pointer',data:[90.18,96.26],itemStyle:{color:C.orange},label:{show:true,position:'inside',color:'#fff',fontWeight:700,fontSize:11,formatter:p=>p.value.toFixed(2)+'%'}},{name:'Conversation Log',type:'bar',stack:'total',barWidth:36,cursor:'pointer',data:[9.82,3.74],itemStyle:{color:C.teal},label:{show:true,position:'inside',color:'#fff',fontWeight:700,fontSize:11,formatter:p=>p.value>=7?p.value.toFixed(2)+'%':''}}]});
+  charts.ovDist.on('click',p=>{
+    const model=p.name;
+    const log=p.seriesName;
+    if(!['GPT-4','ChatGPT'].includes(model) || !['API Log','Conversation Log'].includes(log)) return;
+    document.getElementById('detail-model').value=model;
+    document.getElementById('detail-log').value=log;
+    updateDetail();
+    showPage('detail');
+  });
+
+  charts.usWeekly=chart('us-weekly',{animation:false,grid:{left:51,right:18,top:30,bottom:60},tooltip:commonTooltip('B'),legend:{left:3,top:0,itemWidth:11,itemHeight:11,icon:'circle',textStyle:{fontSize:11,color:'#777'},data:['Total Request Tokens','Total Response Tokens']},xAxis:xAxisWeeks(),yAxis:{type:'value',min:0,max:.4,interval:.2,...baseAxis(),axisLabel:{color:'#746d68',fontSize:12,formatter:v=>v.toFixed(1)+'bn'}},series:[{name:'Total Request Tokens',type:'line',data:dashboardData.tokenWeekly.req,symbol:'circle',symbolSize:7,lineStyle:{color:C.teal,width:3},itemStyle:{color:C.teal}},{name:'Total Response Tokens',type:'line',data:dashboardData.tokenWeekly.resp,symbol:'circle',symbolSize:7,lineStyle:{color:C.orange,width:3},itemStyle:{color:C.orange}}]});
+  function donutOpt(data, labels){return {animation:false,tooltip:{trigger:'item',formatter:'{b}<br>{c} ({d}%)'},legend:{left:5,bottom:0,itemWidth:11,itemHeight:11,icon:'circle',textStyle:{fontSize:11,color:'#6f737b'}},series:[{type:'pie',radius:['43%','66%'],center:['52%','45%'],avoidLabelOverlap:true,label:{show:true,alignTo:'edge',edgeDistance:5,bleedMargin:2,color:'#6d7079',fontSize:10.5,lineHeight:14,formatter:p=>labels[p.dataIndex]},labelLine:{length:10,length2:8,lineStyle:{color:'#7d838c'}},labelLayout:{hideOverlap:false},data} ]}}
+  charts.usDonutTokens=chart('us-donut-tokens',donutOpt([{name:'ChatGPT',value:65.56,itemStyle:{color:C.teal}},{name:'GPT-4',value:34.44,itemStyle:{color:C.orange}}],['1.92B\n(65.56%)','1.01B\n(34.44%)']));
+  charts.usDonutCost=chart('us-donut-cost',donutOpt([{name:'ChatGPT',value:61.35,itemStyle:{color:C.teal}},{name:'GPT-4',value:38.65,itemStyle:{color:C.orange}}],['$1.01M (61.35%)','$0.63M\n(38.65%)']));
+  charts.usDonutTokens.on('click',p=>{document.querySelector('#page-usage .model-slicer').value=p.name;applyFilter('usage')});
+  charts.usDonutCost.on('click',p=>{document.querySelector('#page-usage .model-slicer').value=p.name;applyFilter('usage')});
+
+  charts.laWeekly=chart('la-weekly',{animation:false,grid:{left:55,right:18,top:31,bottom:60},tooltip:commonTooltip(' sec'),legend:{left:3,top:0,itemWidth:11,itemHeight:11,icon:'circle',textStyle:{fontSize:11,color:'#777'},data:['Average Elapsed Time (seconds)','P95 Elapsed Time (seconds)']},xAxis:xAxisWeeks(),yAxis:{type:'value',min:0,max:50,interval:20,...baseAxis()},series:[{name:'Average Elapsed Time (seconds)',type:'line',data:dashboardData.latencyWeekly.avg,symbol:'circle',symbolSize:7,lineStyle:{color:C.teal,width:3},itemStyle:{color:C.teal}},{name:'P95 Elapsed Time (seconds)',type:'line',data:dashboardData.latencyWeekly.p95,symbol:'circle',symbolSize:7,lineStyle:{color:C.orange,width:3},itemStyle:{color:C.orange}}]});
+  charts.laDist=chart('la-dist',{animation:false,grid:{left:76,right:24,top:9,bottom:29},tooltip:{trigger:'axis',axisPointer:{type:'shadow'},formatter:p=>`${p[0].name}<br><b>${p[0].value.toFixed(2)}M requests</b>`},xAxis:{type:'value',min:0,max:4.2,interval:1,...baseAxis(),axisLabel:{color:'#73777e',fontSize:12,formatter:v=>v===0?'0M':v+'M'}},yAxis:{type:'category',data:['0–2 sec','10–30 sec','2–5 sec','30–60 sec','5–10 sec','60+ sec'],axisLine:{show:false},axisTick:{show:false},axisLabel:{color:'#70757d',fontSize:12}},series:[{type:'bar',barWidth:20,data:[4.10,.29,.30,.08,.20,.015],itemStyle:{color:C.teal}}]});
+
+  charts.deWeekly=chart('de-weekly',{animation:false,grid:{left:54,right:18,top:9,bottom:58},tooltip:commonTooltip('K'),xAxis:xAxisWeeks(),yAxis:{type:'value',min:0,max:9,interval:5,...baseAxis(),axisLabel:{color:'#7b7772',fontSize:12,formatter:v=>v+'K'}},series:[{name:'Requests',type:'line',data:dashboardData.detailWeekly,symbol:'circle',symbolSize:6,lineStyle:{color:C.teal,width:3},itemStyle:{color:C.teal}}]});
+  charts.deLatency=chart('de-latency',{animation:false,grid:{left:56,right:18,top:31,bottom:58},tooltip:commonTooltip(' sec'),legend:{left:2,top:0,itemWidth:11,itemHeight:11,icon:'circle',textStyle:{fontSize:11,color:'#777'},data:['Average Elapsed Time (seconds)','P95 Elapsed Time (seconds)']},xAxis:xAxisWeeks(),yAxis:{type:'value',min:0,max:160,interval:100,...baseAxis()},series:[{name:'Average Elapsed Time (seconds)',type:'line',data:dashboardData.detailLatency.avg,symbol:'circle',symbolSize:6,lineStyle:{color:C.teal,width:3},itemStyle:{color:C.teal}},{name:'P95 Elapsed Time (seconds)',type:'line',data:dashboardData.detailLatency.p95,symbol:'circle',symbolSize:6,lineStyle:{color:C.orange,width:3},itemStyle:{color:C.orange}}]});
+  charts.deSla=chart('de-sla-chart',{animation:false,grid:{left:96,right:42,top:14,bottom:9},tooltip:{trigger:'axis',axisPointer:{type:'shadow'},formatter:p=>`${p[0].name}<br><b>${p[0].value}K</b>`},xAxis:{type:'value',max:55,show:false},yAxis:{type:'category',data:['Near SLA ...','SLA Breach','Elevated','Healthy'],axisLine:{show:false},axisTick:{show:false},axisLabel:{fontSize:12,color:'#777'}},series:[{type:'bar',barWidth:34,data:[3,6,15,52],itemStyle:{color:C.teal},label:{show:true,position:'right',fontSize:12,color:'#6c7079',formatter:p=>p.value+'K'}}]});
+  charts.deUsage=chart('de-usage-cost',{animation:false,grid:{left:50,right:48,top:30,bottom:58},tooltip:{trigger:'axis'},legend:{left:1,top:0,itemWidth:11,itemHeight:11,icon:'circle',textStyle:{fontSize:11,color:'#777'},data:['Total Requests','Total Assumed Cost']},xAxis:xAxisWeeks(),yAxis:[{type:'value',min:0,max:10,interval:5,...baseAxis(),axisLabel:{color:'#777',fontSize:12,formatter:v=>v+'K'}},{type:'value',min:0,max:18,interval:10,axisLine:{show:false},axisTick:{show:false},axisLabel:{color:'#777',fontSize:12,formatter:v=>'$'+v+'K'},splitLine:{show:false}}],series:[{name:'Total Requests',type:'bar',data:dashboardData.detailWeekly,barWidth:19,itemStyle:{color:C.teal}},{name:'Total Assumed Cost',type:'line',yAxisIndex:1,data:dashboardData.detailCost,symbol:'circle',symbolSize:6,lineStyle:{color:C.orange,width:3},itemStyle:{color:C.orange}}]});
+}
+
+function matrixRowsOverview(model='All',log='All'){
+ if(model==='All' && log==='All') return `
+<tr class="group"><td><span class="expander">−</span>Conversation Log</td><td>233.617K</td><td>0.29B</td><td>7.00</td><td>3.00</td><td>22.00</td><td>0.79%</td><td>3.09%</td></tr>
+<tr><td class="indent">GPT-4</td><td>75.500K</td><td>0.13B</td><td>14.53</td><td>11.00</td><td>40.00</td><td>1.35%</td><td>7.64%</td></tr>
+<tr><td class="indent">ChatGPT</td><td>158.117K</td><td>0.16B</td><td>3.41</td><td>2.00</td><td>8.00</td><td>0.53%</td><td>0.91%</td></tr>
+<tr class="group"><td><span class="expander">−</span>API Log</td><td>4,763.119K</td><td>2.64B</td><td>2.49</td><td>0.00</td><td>14.00</td><td>3.98%</td><td>0.06%</td></tr>
+<tr><td class="indent">GPT-4</td><td>693.061K</td><td>0.88B</td><td>4.61</td><td>1.00</td><td>18.00</td><td>2.13%</td><td>0.28%</td></tr>
+<tr><td class="indent">ChatGPT</td><td>4,070.058K</td><td>1.76B</td><td>2.13</td><td>0.00</td><td>12.00</td><td>4.29%</td><td>0.02%</td></tr>
+<tr class="total"><td>Total</td><td>4,996.736K</td><td>2.92B</td><td>2.70</td><td>0.00</td><td>15.00</td><td>3.83%</td><td>0.20%</td></tr>`;
+ const c=dashboardData.combinations; const rows=[];
+ function addGroup(l){const keys=Object.keys(c).filter(k=>k.startsWith(l+'|')&&(model==='All'||k.endsWith('|'+model))); if(!keys.length)return; const a=aggregate(model,l); rows.push(`<tr class="group"><td><span class="expander">−</span>${l}</td><td>${(a.requests/1000).toLocaleString(undefined,{minimumFractionDigits:3,maximumFractionDigits:3})}K</td><td>${(a.tokens/1e9).toFixed(2)}B</td><td>${a.avg.toFixed(2)}</td><td>${a.p50.toFixed(2)}</td><td>${a.p95.toFixed(2)}</td><td>${a.failure.toFixed(2)}%</td><td>${a.sla.toFixed(2)}%</td></tr>`);
+   ['GPT-4','ChatGPT'].forEach(m=>{const v=c[l+'|'+m];if(!v||(model!=='All'&&model!==m))return;rows.push(`<tr><td class="indent">${m}</td><td>${(v.requests/1000).toLocaleString(undefined,{minimumFractionDigits:3,maximumFractionDigits:3})}K</td><td>${(v.tokens/1e9).toFixed(2)}B</td><td>${v.avg.toFixed(2)}</td><td>${v.p50.toFixed(2)}</td><td>${v.p95.toFixed(2)}</td><td>${v.failure.toFixed(2)}%</td><td>${v.sla.toFixed(2)}%</td></tr>`);});
+ }
+ ['Conversation Log','API Log'].filter(l=>log==='All'||log===l).forEach(addGroup);
+ const a=aggregate(model,log); rows.push(`<tr class="total"><td>Total</td><td>${(a.requests/1000).toLocaleString(undefined,{minimumFractionDigits:3,maximumFractionDigits:3})}K</td><td>${(a.tokens/1e9).toFixed(2)}B</td><td>${a.avg.toFixed(2)}</td><td>${a.p50.toFixed(2)}</td><td>${a.p95.toFixed(2)}</td><td>${a.failure.toFixed(2)}%</td><td>${a.sla.toFixed(2)}%</td></tr>`);
+ return rows.join('');
+}
+function matrixRowsUsage(model='All',log='All'){
+ const c=dashboardData.combinations; const rows=[];
+ function fM(v,d=0){return (v/1e6).toFixed(d)+'M'} function money(v){return '$'+(v/1e6).toFixed(3)+'M'}
+ function addGroup(l){const a=aggregate(model,l);rows.push(`<tr class="group"><td><span class="expander">−</span>${l}</td><td>${(a.requests/1e6).toFixed(2)}M</td><td>${fM(a.requestTokens)}</td><td>${fM(a.responseTokens)}</td><td>${fM(a.tokens)}</td><td>${money(a.cost)}</td></tr>`);['ChatGPT','GPT-4'].forEach(m=>{if(model!=='All'&&model!==m)return;const v=c[l+'|'+m];if(!v)return;rows.push(`<tr><td class="indent">${m}</td><td>${(v.requests/1e6).toFixed(2)}M</td><td>${fM(v.requestTokens)}</td><td>${fM(v.responseTokens)}</td><td>${fM(v.tokens)}</td><td>${money(v.cost)}</td></tr>`);});}
+ ['API Log','Conversation Log'].filter(l=>log==='All'||log===l).forEach(addGroup);const a=aggregate(model,log);rows.push(`<tr class="total"><td>Total</td><td>${(a.requests/1e6).toFixed(2)}M</td><td>${fM(a.requestTokens)}</td><td>${fM(a.responseTokens)}</td><td>${fM(a.tokens)}</td><td>${money(a.cost)}</td></tr>`);return rows.join('');
+}
+function renderTables(){
+ document.getElementById('ov-matrix-body').innerHTML=matrixRowsOverview();
+ document.getElementById('us-matrix-body').innerHTML=matrixRowsUsage();
+ document.getElementById('la-table-body').innerHTML=dashboardData.latencyRows.map(r=>`<tr>${r.map((v,i)=>`<td class="${i===4||i===5?'num ':''}${i===6?(v==='Breached'?'status-bad':'status-ok'):''}${i===7?(v==='SLA Breach'?'status-bad':v==='Near SLA Limit'?'status-warn':'status-ok'):''}">${v}</td>`).join('')}</tr>`).join('');
+ document.getElementById('de-table-body').innerHTML=dashboardData.detailRows.map(r=>`<tr>${r.map((v,i)=>`<td class="${i>=4&&i<=6?'num':''}">${v}</td>`).join('')}</tr>`).join('');
+}
+function applyFilter(page){
+ const root=document.querySelector(`[data-page="${page}"]`);const model=root.querySelector('.model-slicer')?.value||'All';const log=root.querySelector('.log-slicer')?.value||'All';const a=aggregate(model,log);
+ if(page==='overview'){
+   const all=model==='All'&&log==='All';document.getElementById('ov-requests').textContent=all?'4.997M':(a.requests/1e6).toFixed(3)+'M';document.getElementById('ov-tokens').textContent=all?'2.92B':(a.tokens/1e9).toFixed(2)+'B';document.getElementById('ov-cost').textContent=all?'$1.64M':'$'+(a.cost/1e6).toFixed(2)+'M';document.getElementById('ov-breaches').textContent=all?'10K':Math.round(a.requests*a.sla/100/1000)+'K';document.getElementById('ov-matrix-body').innerHTML=matrixRowsOverview(model,log);
+ }
+ if(page==='usage'){
+   const all=model==='All'&&log==='All';document.getElementById('us-reqtokens').textContent=all?'2,507M':Math.round(a.requestTokens/1e6).toLocaleString()+'M';document.getElementById('us-resptokens').textContent=all?'414M':Math.round(a.responseTokens/1e6).toLocaleString()+'M';document.getElementById('us-avg').textContent=all?'584.63':((a.requestTokens+a.responseTokens)/a.requests).toFixed(2);document.getElementById('us-cpr').textContent=all?'$0.33':'$'+(a.cost/a.requests).toFixed(2);document.getElementById('us-matrix-body').innerHTML=matrixRowsUsage(model,log);
+ }
+ if(page==='latency'){
+   const all=model==='All'&&log==='All';document.getElementById('la-avg').textContent=all?'2.70':a.avg.toFixed(2);document.getElementById('la-p95').textContent=all?'15.00':a.p95.toFixed(2);document.getElementById('la-sd').textContent=all?'9.75':a.sd.toFixed(2);document.getElementById('la-fail').textContent=all?'3.83%':a.failure.toFixed(2)+'%';
+ }
+}
+function updateDetail(){
+ const log=document.getElementById('detail-log').value,model=document.getElementById('detail-model').value;const v=dashboardData.combinations[log+'|'+model]||aggregate(model,log);
+ document.getElementById('de-requests').textContent=v.requests>=1e6?(v.requests/1e6).toFixed(2)+'M':(v.requests/1e3).toFixed(2)+'K';document.getElementById('de-tokens').textContent=(v.tokens/1e9).toFixed(2)+'B';document.getElementById('de-avg').textContent=v.avg.toFixed(2);document.getElementById('de-p95').textContent=v.p95.toFixed(2);document.getElementById('de-sla').textContent=v.sla.toFixed(2)+'%';
+}
+
+function buildTabs(){document.querySelectorAll('.tabs').forEach(t=>{const p=t.closest('.page').dataset.page;t.innerHTML=`<div class="tab-left"><span class="mobile">▯</span><span class="arrows">‹ ›</span></div><div class="tab ${p==='overview'?'active':''}" data-target="overview">Executive Overview${p==='overview'?'<span class="close">x</span>':''}</div><div class="tab ${p==='usage'?'active':''}" data-target="usage">Usage &amp; Assumed Cost${p==='usage'?'<span class="close">x</span>':''}</div><div class="tab ${p==='latency'?'active':''}" data-target="latency">Latency and Reliability${p==='latency'?'<span class="close">x</span>':''}</div><div class="tab drill ${p==='detail'?'active':''}" data-target="detail">⌁ Model &amp; Log Type Detail${p==='detail'?'<span class="close">x</span>':''}</div><div class="tab-plus">+</div>`})}
+function showPage(name){document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.dataset.page===name));setTimeout(()=>Object.values(charts).forEach(c=>c.resize()),10)}
+function resizeDashboard(){
+ const BASE_W=1433, BASE_H=840;
+ const scale=window.innerWidth/BASE_W;
+ const d=document.getElementById('dashboard');
+ const viewport=document.getElementById('viewport');
+ d.style.transform=`scale(${scale})`;
+ viewport.style.height=Math.max(window.innerHeight,Math.ceil(BASE_H*scale))+'px';
+}
+
+buildTabs();renderTables();initCharts();resizeDashboard();
+window.addEventListener('resize',resizeDashboard);
+document.addEventListener('click',e=>{const el=e.target.closest('[data-target]');if(el)showPage(el.dataset.target)});
+document.querySelectorAll('.model-slicer,.log-slicer').forEach(s=>s.addEventListener('change',()=>applyFilter(s.dataset.page)));
+document.getElementById('detail-log').addEventListener('change',updateDetail);document.getElementById('detail-model').addEventListener('change',updateDetail);
+</script>
+</body>
+</html>

@@ -1,0 +1,202 @@
+---
+import ResponsivePicture from "../components/ResponsivePicture.astro";
+import ProjectCard from "../components/ProjectCard.astro";
+import { education, experience, projects, site, skillGroups } from "../data/site";
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+const pageTitle = "Muskan Roy | Data Analyst in Noida — Power BI & SQL";
+const profileImageUrl = new URL(site.profileImage.src.src, site.url).toString();
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Person",
+      "@id": `${site.url}/#person`,
+      name: site.name,
+      jobTitle: site.role,
+      description: site.description,
+      url: `${site.url}/`,
+      image: profileImageUrl,
+      email: `mailto:${site.email}`,
+      address: {
+        "@type": "PostalAddress",
+        addressLocality: "Noida",
+        addressCountry: "IN",
+      },
+      alumniOf: [
+        {
+          "@type": "CollegeOrUniversity",
+          name: "Indira Gandhi Delhi Technical University for Women",
+        },
+        {
+          "@type": "CollegeOrUniversity",
+          name: "Guru Gobind Singh Indraprastha University",
+        },
+      ],
+      worksFor: {
+        "@type": "Organization",
+        name: "Plan Thy Business",
+      },
+      knowsAbout: [
+        "Power BI",
+        "SQL Server",
+        "Microsoft Excel",
+        "Power Query",
+        "DAX",
+        "Business intelligence",
+        "KPI reporting",
+        "Data cleaning",
+        "Data validation",
+        "Data modelling",
+        "Finance analytics",
+        "Operations analytics",
+      ],
+      sameAs: [site.social.linkedin, site.social.github],
+    },
+    {
+      "@type": "WebSite",
+      "@id": `${site.url}/#website`,
+      url: `${site.url}/`,
+      name: site.name,
+      alternateName: `${site.name} Data Analyst Portfolio`,
+      description: site.description,
+      inLanguage: "en-IN",
+      publisher: { "@id": `${site.url}/#person` },
+    },
+    {
+      "@type": "ProfilePage",
+      "@id": `${site.url}/#profilepage`,
+      url: `${site.url}/`,
+      name: pageTitle,
+      description: site.description,
+      mainEntity: { "@id": `${site.url}/#person` },
+      isPartOf: { "@id": `${site.url}/#website` },
+      primaryImageOfPage: {
+        "@type": "ImageObject",
+        url: profileImageUrl,
+        width: site.profileImage.src.width,
+        height: site.profileImage.src.height,
+      },
+      hasPart: projects.map((project) => ({
+        "@type": "Article",
+        "@id": `${site.url}/projects/${project.slug}/#case-study`,
+        headline: project.title,
+        description: project.seoDescription,
+        url: `${site.url}/projects/${project.slug}/`,
+        author: { "@id": `${site.url}/#person` },
+      })),
+      inLanguage: "en-IN",
+    },
+  ],
+};
+---
+
+<BaseLayout
+  title={pageTitle}
+  description={site.description}
+  path="/"
+  image={site.profileImage.src}
+  imageAlt={site.profileImage.alt}
+  pageType="profile"
+  structuredData={structuredData}
+>
+  <section class="hero shell">
+    <div class="hero-copy reveal is-visible">
+      <p class="eyebrow">{site.role} in {site.location}</p>
+      <h1>{site.headline}</h1>
+      <p class="hero-intro">{site.introduction}</p>
+      <div class="hero-actions">
+        <a class="button button-primary" href="#work">See my work</a>
+        <a class="button button-secondary" href={site.social.linkedin} target="_blank" rel="noreferrer">
+          LinkedIn profile <span aria-hidden="true">↗</span>
+        </a>
+      </div>
+      <p class="hero-context">I use SQL Server, Power Query, and Excel to clean, combine, and validate data, then build Power BI reports around defined KPIs and comparisons that are easy to follow.</p>
+    </div>
+    <figure class="portrait-panel reveal is-visible">
+      <div class="portrait-frame">
+        <ResponsivePicture
+          src={site.profileImage.src}
+          alt={site.profileImage.alt}
+          loading="eager"
+          widths={[360, 520, 720, 900, site.profileImage.src.width]}
+          sizes="(max-width: 760px) 90vw, 38vw"
+          quality={90}
+        />
+      </div>
+      <figcaption>Muskan Roy, Data Analyst</figcaption>
+    </figure>
+  </section>
+
+  <section class="section shell" aria-labelledby="work-title">
+    <div class="section-heading reveal nav-target" id="work">
+      <p class="eyebrow">Selected work</p>
+      <h2 id="work-title">Power BI projects, from source to report.</h2>
+      <p>These case studies cover the source data, preparation steps, metric definitions, and findings. Each includes an interactive preview and screenshots of the Power BI report, with notes on the checks performed and the limits of what the data can show.</p>
+    </div>
+    <div class="project-list">
+      {projects.map((project) => <ProjectCard project={project} />)}
+    </div>
+  </section>
+
+  <section class="section section-rule shell" aria-labelledby="experience-title">
+    <div class="section-heading compact reveal nav-target" id="experience">
+      <p class="eyebrow">Experience</p>
+      <h2 id="experience-title">Client reporting and research.</h2>
+    </div>
+    <div class="experience-list">
+      {experience.map((item) => (
+        <article class="experience-item reveal">
+          <div class="experience-company">
+            <h3>{item.company}</h3>
+            {item.roles.map((role) => (
+              <div class="role-line">
+                <p>{role.title}</p>
+                <p>{role.dates}</p>
+              </div>
+            ))}
+          </div>
+          <p class="experience-summary">{item.summary}</p>
+        </article>
+      ))}
+    </div>
+  </section>
+
+  <section class="section about-section" aria-labelledby="about-title">
+    <div class="about-grid nav-target" id="about">
+      <div class="section-heading compact reveal">
+        <p class="eyebrow">About</p>
+        <h2 id="about-title">A background in business and research.</h2>
+      </div>
+      <div class="about-copy reveal">
+        <p class="large-copy">
+          My background is in research and business analysis, with an MBA in Finance &amp; Business Analytics. I work from the reporting question back to the source data: what needs to be measured, how it is defined, and whether the figures reconcile. I then organise the report around the level of detail its audience needs, with a clear route from summary measures to the records behind them.
+        </p>
+        <div class="about-details">
+          <div class="skill-groups" aria-label="Skills">
+            <p class="detail-label">Skills</p>
+            {skillGroups.map((group) => (
+              <article class="skill-group">
+                <h3>{group.title}</h3>
+                <p>{group.skills.join(", ")}</p>
+              </article>
+            ))}
+          </div>
+          <div class="education-list" aria-label="Education">
+            <p class="detail-label">Education</p>
+            {education.map((item) => (
+              <article>
+                <div>
+                  <h3>{item.degree}</h3>
+                  <p>{item.school}</p>
+                </div>
+                <p><span>{item.dates}</span><span>{item.detail}</span></p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</BaseLayout>

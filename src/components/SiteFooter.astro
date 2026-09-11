@@ -1,0 +1,70 @@
+---
+import { site } from "../data/site";
+
+interface Props {
+  showContact?: boolean;
+}
+
+const { showContact = true } = Astro.props;
+---
+
+<footer class="site-footer">
+  {showContact && (
+    <section class="contact-section" aria-labelledby="contact-title">
+      <div class="shell contact-grid nav-target" id="contact">
+        <div class="contact-intro reveal">
+          <p class="eyebrow">Contact</p>
+          <h2 id="contact-title">Get in touch.</h2>
+          <p>
+            If you’re hiring for a data analyst or business intelligence role, I’d like to hear about the team and its reporting needs. You can also get in touch to discuss the methods, measures, or findings in either case study.
+          </p>
+          <div class="contact-direct">
+            <span>Email me directly</span>
+            <a href={`mailto:${site.email}`}>{site.email}</a>
+          </div>
+        </div>
+
+        <form
+          class="contact-form reveal"
+          action={`https://formsubmit.co/${site.email}`}
+          method="POST"
+        >
+          <input type="hidden" name="_subject" value="New portfolio message for Muskan Roy" />
+          <input type="hidden" name="_template" value="table" />
+          <input type="hidden" name="_next" value={`${site.url}/message-sent/`} />
+          <input class="form-honey" type="text" name="_honey" tabindex="-1" autocomplete="off" />
+
+          <div class="form-row">
+            <label>
+              <span>Name</span>
+              <input type="text" name="name" autocomplete="name" required />
+            </label>
+            <label>
+              <span>Email address</span>
+              <input type="email" name="email" autocomplete="email" inputmode="email" required />
+            </label>
+          </div>
+          <label>
+            <span>Message</span>
+            <textarea name="message" rows="6" maxlength="3000" required></textarea>
+          </label>
+          <div class="form-actions">
+            <button class="button contact-submit" type="submit">
+              Send message <span aria-hidden="true">↗</span>
+            </button>
+            <p>I’ll use your contact details only to reply.</p>
+          </div>
+        </form>
+      </div>
+    </section>
+  )}
+
+  <div class="shell footer-inner">
+    <p>© {new Date().getFullYear()} {site.name}</p>
+    <p>Data Analyst · Noida, India</p>
+    <div class="footer-links" aria-label="Professional profiles">
+      <a href={site.social.linkedin} target="_blank" rel="noreferrer">LinkedIn</a>
+      <a href={site.social.github} target="_blank" rel="noreferrer">GitHub</a>
+    </div>
+  </div>
+</footer>

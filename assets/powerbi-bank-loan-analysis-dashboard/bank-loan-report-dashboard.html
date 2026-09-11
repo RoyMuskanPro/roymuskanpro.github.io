@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bank Loan Analysis — Report Preview</title>
+<style>
+  :root{
+    --bg:#00083d;
+    --panel:#023563;
+    --kpi:#022e5d;
+    --sidebar:#000000;
+    --filter:#094780;
+    --orange:#93462c;
+    --yellow:#e8d166;
+    --light:#a0d1ff;
+    --white:#ffffff;
+    --text:#cccccc;
+    --purple:#573b92;
+    --rowblue:#094780;
+    --rowdark:#333333;
+    --head:#252423;
+    --blue:#118dff;
+    --salmon:#e68f96;
+    --pink:#e669b9;
+    --magenta:#f000c8;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#0a0a0a;font-family:"Segoe UI","Segoe UI Variable",Arial,sans-serif;color:white;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:geometricPrecision}
+  body{user-select:none} html::-webkit-scrollbar,body::-webkit-scrollbar,#stage::-webkit-scrollbar{display:none}
+  #stage{position:fixed;inset:0;overflow:hidden;background:#0a0a0a}
+  #dashboard{position:absolute;width:1442px;height:810px;transform-origin:0 0;background:var(--bg);overflow:hidden;box-shadow:0 0 0 1px #020020}
+  .topbar{position:absolute;left:0;top:0;width:1442px;height:60px;background:#000;z-index:3;border-bottom:0}
+  .title{position:absolute;top:5px;left:480px;width:auto;text-align:left;font-size:31px;line-height:42px;font-weight:700;letter-spacing:.1px;white-space:nowrap;transform:scaleX(.855);transform-origin:left top}
+  .title .accent{color:var(--light)}
+  .sidebar{position:absolute;left:0;top:60px;width:216px;height:750px;background:#000;z-index:2}
+  .mainbg{position:absolute;left:216px;top:60px;width:1226px;height:750px;background:var(--bg)}
+
+  .bank-logo{position:absolute;z-index:5;left:38px;top:27px;width:145px;height:153px}
+  .bank-logo svg{width:100%;height:100%;overflow:visible}
+
+  .nav{position:absolute;z-index:6;left:12px;top:203px;width:200px}
+  .nav.detail-layout{top:228px}
+  .nav-btn{width:200px;height:54px;margin-bottom:11px;border:1px solid #111;background:#666;color:#fff;font:400 16px/52px "Segoe UI",Arial,sans-serif;text-align:center;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(255,255,255,.02);transition:filter .12s ease}
+  .nav-btn:hover{filter:brightness(1.08)}
+  .nav-btn.active{background:#fff;color:#111}
+
+  .filters{position:absolute;z-index:6;left:15px;top:438px;width:199px}
+  .filters.overview-filters{top:447px;left:18px;width:196px}
+  .filters.details-filters{top:466px;left:16px;width:196px}
+  .filter-block{margin:0 0 24px 0}
+  .overview-filters .filter-block{margin-bottom:10px}
+  .details-filters .filter-block{margin-bottom:28px}
+  .filter-label{font-size:16px;line-height:19px;font-weight:650;margin:0 0 9px 3px;color:#f2f2f2;white-space:nowrap}
+  .filter-shell{height:54px;background:var(--filter);padding:11px 11px 10px 11px;position:relative}
+  select.pbi-select{appearance:none;-webkit-appearance:none;width:100%;height:31px;border:1px solid #dbe7f5;border-radius:0;background:#0b528d;color:#fff;padding:2px 32px 2px 7px;font-size:16px;font-weight:600;outline:none;cursor:pointer}
+  .select-arrow{position:absolute;right:17px;top:20px;width:11px;height:11px;border-right:2px solid #e5edf6;border-bottom:2px solid #e5edf6;transform:rotate(45deg);pointer-events:none}
+  .filter-scroll{position:absolute;right:7px;top:38px;width:10px;height:21px;background:#c9c9c9}
+
+  .kpi-row{position:absolute;z-index:4;left:225px;top:68px;width:1206px;height:132px;display:grid;grid-template-columns:repeat(5,1fr);gap:27px}
+  .kpi{height:132px;background:var(--kpi);padding:8px 12px 6px 12px;text-align:center;position:relative;overflow:hidden;transition:filter .12s ease}
+  .kpi:hover{filter:brightness(1.08)}
+  .kpi.primary{background:var(--orange)}
+  .kpi-title{font-size:14px;font-weight:700;color:var(--light);line-height:19px;white-space:nowrap}
+  .kpi-value{font-size:39px;font-weight:750;line-height:50px;margin-top:3px;color:#fff;letter-spacing:-.8px}
+  .kpi-subhead{position:absolute;left:25px;right:25px;top:84px;display:flex;justify-content:space-between;color:var(--yellow);font-size:15px;font-weight:700}
+  .kpi-subvalue{position:absolute;left:25px;right:25px;top:109px;display:flex;justify-content:space-between;color:#d0d0d0;font-size:16px;font-weight:650}
+
+  .page{position:absolute;left:0;top:0;width:1442px;height:810px;display:none}
+  .page.active{display:block}
+  .panel{position:absolute;background:var(--panel);border-radius:14px;overflow:hidden}
+  .panel-title{position:absolute;left:15px;top:9px;color:var(--light);font-size:18px;font-weight:700;line-height:24px;z-index:2;white-space:nowrap}
+  .panel-title.centered{left:20px;width:230px;text-align:center}
+
+  /* Summary */
+  #summary-good{left:228px;top:222px;width:601px;height:294px}
+  #summary-bad{left:842px;top:222px;width:589px;height:294px}
+  #loan-status-panel{left:228px;top:529px;width:1203px;height:269px;border-radius:14px}
+  .donut-wrap{position:absolute;left:30px;top:70px;width:205px;height:205px}
+  .summary-metrics{position:absolute;left:260px;top:30px;width:318px;height:245px}
+  .metric-row{height:84px;position:relative;padding:10px 0 0 15px}
+  .metric-row:before{content:"";position:absolute;left:0;top:1px;width:6px;height:76px;background:#8bc8ff;border-radius:5px}
+  #summary-bad .metric-row:before{background:#f5d44f}
+  #summary-bad .donut-wrap{left:45px}
+  #summary-bad .summary-metrics{left:270px}
+  #summary-bad .panel-title.centered{left:30px}
+  #summary .panel-title.centered{top:13px}
+  .metric-label{font-size:18px;color:#cfd8e2;font-weight:650;line-height:24px}
+  .metric-value{font-size:29px;color:#f5d44f;font-weight:750;line-height:38px;letter-spacing:-.5px}
+  #summary-bad .metric-value{color:#65b9ff}
+  .donut-svg{width:100%;height:100%;overflow:visible}
+  .donut-center{font-weight:760;fill:#f5d44f;text-anchor:middle;dominant-baseline:middle;font-size:39px}
+  .donut-ring{cursor:pointer;transition:opacity .1s ease,stroke-width .1s ease}
+  .donut-ring:hover{opacity:.86}
+
+  .loan-status-title{position:absolute;left:16px;top:14px;color:var(--light);font-size:18px;font-weight:700}
+  .summary-table-wrap{position:absolute;left:12px;right:20px;top:60px;height:194px;overflow:hidden}
+  table{border-collapse:collapse}
+  .summary-table{width:100%;table-layout:fixed;font-size:16px}
+  .summary-table thead th{background:#333;color:#fff;font-weight:500;height:63px;border-right:1px solid #555;border-bottom:1px solid #777;text-align:center;padding:4px 5px;line-height:21px}
+  .summary-table thead th:first-child{text-align:left;padding-left:13px}
+  .summary-table tbody td{height:33px;background:var(--rowblue);border-right:1px solid #286697;color:#f0c4ad;font-weight:650;padding:4px 7px;text-align:right;white-space:nowrap}
+  .summary-table tbody td:first-child{text-align:left;font-size:18px}
+  .summary-table tbody tr:not(:last-child) td{border-bottom:3px solid var(--purple)}
+  .summary-table tbody tr.total td{background:#333;color:#eee;border-bottom:0;border-top:1px solid #9c9c9c;font-weight:700}
+  .sort-tri{position:absolute;left:19px;top:49px;width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:7px solid #fff}
+
+  /* Overview */
+  #overview .panel{border-radius:14px}
+  #funded-month{left:226px;top:224px;width:458px;height:267px}
+  #funded-state{left:707px;top:224px;width:406px;height:267px}
+  #funded-term{left:1135px;top:224px;width:295px;height:267px}
+  #funded-emp{left:226px;top:510px;width:458px;height:288px}
+  #funded-purpose{left:707px;top:510px;width:406px;height:288px}
+  #home-owner{left:1135px;top:510px;width:295px;height:288px}
+  .chart-host{position:absolute;left:8px;right:8px;top:34px;bottom:8px;overflow:visible}
+  .chart-host svg{width:100%;height:100%;overflow:visible}
+  .chart-scrollbar{position:absolute;right:11px;top:50px;width:9px;height:233px;background:#7796b0;border-radius:5px}
+  .chart-scrollbar:before{content:"";position:absolute;left:-1px;top:-4px;width:9px;height:144px;border:1px solid #fff;background:#6e91ad;border-radius:5px}
+  #funded-purpose .chart-scrollbar:before{height:149px}
+  .axis-text{font-size:13px;fill:#dedede}
+  .chart-label{font-size:13px;fill:#f1f1f1;font-weight:500}
+  .bar-label-bg{fill:#14426b}
+  .interactive-shape{cursor:pointer;transition:opacity .12s ease,filter .12s ease}
+  .interactive-shape:hover{opacity:.86;filter:brightness(1.1)}
+  .legend{position:absolute;left:72px;top:43px;font-size:12px;color:#fff;white-space:nowrap}
+  .legend span{display:inline-flex;align-items:center;margin-right:8px}
+  .legend i{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:3px}
+  .term-label{position:absolute;color:#fff;font-size:12px;font-weight:600;z-index:2}
+  .map-svg{position:absolute;left:23px;top:44px;width:355px;height:207px;overflow:hidden}
+  .map-state{stroke:#6f6b68;stroke-width:.9;vector-effect:non-scaling-stroke;cursor:pointer;transition:filter .12s ease,opacity .12s ease}
+  .map-state:hover{filter:brightness(1.08);stroke:#fff;stroke-width:1.4}
+  .treemap{position:absolute;left:9px;right:0;top:61px;bottom:8px;border:1px solid #ddd;display:grid;grid-template-columns:92.5% 7.5%;grid-template-rows:55% 45%;overflow:hidden}
+  .tree-cell{position:relative;border-right:2px solid #fff;border-bottom:2px solid #fff;padding:5px 6px;font-size:16px;cursor:pointer;transition:filter .12s ease;overflow:hidden}
+  .tree-cell:hover{filter:brightness(1.08)}
+  .tree-cell .tree-value{position:absolute;left:6px;bottom:3px;font-size:14px}
+  .tree-cell.mortgage{grid-column:1;grid-row:1}.tree-cell.rent{grid-column:1;grid-row:2}.tree-cell.own{grid-column:2;grid-row:1 / span 2;border-right:0;border-bottom:0;padding:0}
+  .overview-filters .filter-block:last-child .filter-scroll{top:-29px;right:7px;height:20px;width:9px;background:#c9c9c9}
+  #stateMap svg{display:block;width:100%;height:100%;shape-rendering:geometricPrecision;text-rendering:geometricPrecision}
+
+  /* Details */
+  #details-table-panel{left:230px;top:212px;width:1201px;height:579px;border-radius:24px}
+  .details-table-scroller{position:absolute;left:17px;right:17px;top:14px;bottom:4px;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:#7796b0 transparent}
+
+  .details-table-scroller::-webkit-scrollbar{width:9px}
+  .details-table-scroller::-webkit-scrollbar-track{background:transparent}
+  .details-table-scroller::-webkit-scrollbar-thumb{background:#7796b0;border-radius:6px}
+  .details-table{width:100%;table-layout:fixed;font-size:16px;color:#ccc}
+  .details-table thead{position:sticky;top:0;z-index:2}
+  .details-table thead th{height:35px;background:var(--head);color:#fff;font-size:15px;font-weight:500;text-align:left;border-bottom:1px solid #777;padding:5px 6px;white-space:nowrap}
+  .details-table thead th.num{text-align:right}
+  .details-table tbody td{height:27px;padding:3px 6px;background:var(--rowblue);border-bottom:1px solid #929292;color:#ccc;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:clip}
+  .details-table tbody tr:nth-child(even) td{background:#333}
+  .details-table tbody td.num{text-align:right}
+  .details-table tbody td:first-child{font-weight:700}
+  .details-table tbody tr:hover td,.summary-table tbody tr:not(.total):hover td{filter:brightness(1.08)}
+  .detail-sort{position:absolute;right:135px;top:35px;width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:7px solid #fff;z-index:4}
+  .detail-scroll-track{display:none}
+
+  .tooltip{position:fixed;z-index:9999;pointer-events:none;display:none;background:#1b1b1b;color:#fff;border:1px solid #666;border-radius:2px;padding:7px 9px;font-size:13px;line-height:18px;box-shadow:0 2px 8px rgba(0,0,0,.4);white-space:nowrap}
+  .tooltip b{font-weight:700}
+
+  .focus-dim .interactive-shape:not(.selected){opacity:.32}
+  .selected{filter:brightness(1.18)}
+</style>
+</head>
+<body>
+<div id="stage"><div id="dashboard">
+  <div class="topbar"><div class="title">BANK LOAN REPORT | <span id="pageTitle" class="accent">SUMMARY</span></div></div>
+  <div class="mainbg"></div><div class="sidebar"></div>
+  <div class="bank-logo" aria-hidden="true">
+    <svg viewBox="0 0 150 155" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="logoGrad" x1="18" y1="10" x2="126" y2="145" gradientUnits="userSpaceOnUse"><stop stop-color="#00B6E8"/><stop offset="1" stop-color="#7351B7"/></linearGradient></defs>
+      <g stroke="url(#logoGrad)" stroke-width="3.4" stroke-linejoin="round" stroke-linecap="round">
+        <path d="M14 48L75 10L136 48H14Z"/><path d="M18 48H132V58H18Z"/><circle cx="75" cy="31" r="7"/>
+        <path d="M27 58H123L118 68H32L27 58Z"/>
+        <path d="M31 68H49V113H31Z"/><path d="M101 68H119V113H101Z"/>
+        <path d="M56 68H94V113H56Z"/><circle cx="75" cy="91" r="17"/>
+        <path d="M75 79V103M81 84C79 79 69 79 68 85C67 91 82 90 82 97C82 104 69 104 67 98"/>
+        <path d="M25 114H125V124H25Z"/><path d="M18 124H132V134H18Z"/><path d="M10 134H140V144H10Z"/>
+      </g>
+    </svg>
+  </div>
+
+  <div class="nav" id="nav">
+    <button class="nav-btn active" data-page="summary">Summary</button>
+    <button class="nav-btn" data-page="overview">Overview</button>
+    <button class="nav-btn" data-page="details">Details</button>
+  </div>
+
+  <div class="filters" id="filters"></div>
+
+  <div class="kpi-row" id="kpiRow"></div>
+
+  <section class="page active" id="summary">
+    <div class="panel" id="summary-good"><div class="panel-title centered">Good Loans Issued</div><div id="goodDonut" class="donut-wrap"></div><div class="summary-metrics" id="goodMetrics"></div></div>
+    <div class="panel" id="summary-bad"><div class="panel-title centered">Bad Loans Issued</div><div id="badDonut" class="donut-wrap"></div><div class="summary-metrics" id="badMetrics"></div></div>
+    <div class="panel" id="loan-status-panel"><div class="loan-status-title">LOAN STATUS</div><div class="summary-table-wrap"><div class="sort-tri"></div><table class="summary-table" id="summaryTable"></table></div></div>
+  </section>
+
+  <section class="page" id="overview">
+    <div class="panel" id="funded-month"><div class="panel-title">Total Funded Amount by Month</div><div class="chart-host" id="monthChart"></div></div>
+    <div class="panel" id="funded-state"><div class="panel-title">Total Funded Amount by State</div><div class="map-svg" id="stateMap"></div></div>
+    <div class="panel" id="funded-term"><div class="panel-title">Total Funded Amount by Term</div><div class="legend"><span><i style="background:#8fc8ff"></i>36 months</span><span><i style="background:#3d48ad"></i>60 months</span></div><div class="chart-host" id="termChart"></div><div class="term-label" style="left:15px;top:78px">$162.7M (37.34%)</div><div class="term-label" style="left:18px;bottom:16px">$273.0M (62.66%)</div></div>
+    <div class="panel" id="funded-emp"><div class="panel-title">Total Funded Amount by emp_length</div><div class="chart-host" id="empChart"></div><div class="chart-scrollbar"></div></div>
+    <div class="panel" id="funded-purpose"><div class="panel-title">Total Funded Amount by Purpose</div><div class="chart-host" id="purposeChart"></div><div class="chart-scrollbar"></div></div>
+    <div class="panel" id="home-owner"><div class="panel-title" style="white-space:normal;width:275px;line-height:22px">Total Funded Amount by Home Ownership</div><div class="treemap" id="homeTreemap"></div></div>
+  </section>
+
+  <section class="page" id="details"><div class="panel" id="details-table-panel"><div class="detail-sort"></div><div class="details-table-scroller"><table class="details-table" id="detailsTable"></table></div><div class="detail-scroll-track" aria-hidden="true"></div></div></section>
+</div></div>
+<div class="tooltip" id="tooltip"></div>
+<script>
+const dashboardData={
+  kpis:[
+    {title:'Total Loan Applications',value:'38.6K',mtd:'4.3K',mom:'6.91%',primary:true},
+    {title:'Total Funded Amount',value:'$435.8M',mtd:'$54.0M',mom:'13.04%'},
+    {title:'Total Amount Received',value:'$473.1M',mtd:'$58.1M',mom:'15.84%'},
+    {title:'Average Interest Rate',value:'12.05%',mtd:'12.36%',mom:'3.47%'},
+    {title:'Average DTI',value:'13.33%',mtd:'13.67%',mom:'2.73%'}
+  ],
+  summary:{
+    good:{pct:86.18,metrics:[['Good Loan Applications','33K'],['Good Loan Funded Amount','$370.2M'],['Good Loan Amount Received','$435.8M']]},
+    bad:{pct:13.82,metrics:[['Bad Loan Applications','5K'],['Bad Loan Funded Amount','$65.5M'],['Bad Loan Amount Received','$37.3M']]},
+    status:[
+      ['Charged Off','5333','$6,55,32,225.0','$3,72,84,763.0','$87,32,775.0','$53,24,211.0','13.88%','14.00%'],
+      ['Current','1098','$1,88,66,500.0','$2,41,99,914.0','$39,46,625.0','$49,34,318.0','15.10%','14.72%'],
+      ['Fully Paid','32145','$35,13,58,350.0','$41,15,86,256.0','$4,13,02,025.0','$4,78,15,851.0','11.64%','13.17%'],
+      ['Grand Total','38576','$43,57,57,075.0','$47,30,70,933.0','$5,39,81,425.0','$5,80,74,380.0','12.05%','13.33%']
+    ]
+  },
+  overview:{
+    monthly:[['Jan',25],['Feb',25],['Mar',29],['Apr',30],['May',32],['Jun',34],['Jul',36],['Aug',38],['Sep',41],['Oct',45],['Nov',48],['Dec',54]],
+    term:[['36 months',273.0,62.66],['60 months',162.7,37.34]],
+    emp:[['10+ years',116],['2 years',45],['< 1 year',44],['3 years',44],['4 years',38],['5 years',37],['1 year',33],['6 years',26],['7 years',21]],
+    purpose:[['Debt consol...',0.23],['credit card',0.06],['home impro...',0.03],['other',0.03],['small busine...',0.02],['major purch...',0.02],['car',0.01],['wedding',0.01],['medical',0.01]],
+    home:[['MORTGAGE',219.3],['RENT',185.8],['OWN',29.5]]
+  },
+  details:[
+    ['989285','Debt consolidation','RENT','G','G1','11 October 2021','$35,000.0','0.23','981.45','$58,564.0'],
+    ['812976','Debt consolidation','MORTGAGE','G','G2','11 August 2021','$35,000.0','0.22','976.24','$58,480.0'],
+    ['972576','credit card','MORTGAGE','F','F5','11 October 2021','$35,000.0','0.22','973.64','$57,835.0'],
+    ['874599','Debt consolidation','MORTGAGE','G','G3','11 September 2021','$35,000.0','0.23','983.66','$56,849.0'],
+    ['768930','small business','MORTGAGE','F','F3','11 June 2021','$35,000.0','0.21','946.68','$56,663.0'],
+    ['674448','Debt consolidation','MORTGAGE','G','G2','11 February 2021','$35,000.0','0.20','936.66','$56,199.0'],
+    ['914211','Debt consolidation','MORTGAGE','F','F1','11 October 2021','$35,000.0','0.21','944.71','$55,907.0'],
+    ['772157','small business','RENT','G','G1','11 June 2021','$35,000.0','0.22','968.86','$55,769.0'],
+    ['1057770','Debt consolidation','MORTGAGE','E','E5','11 December 2021','$35,000.0','0.20','933.14','$55,139.0'],
+    ['833224','Debt consolidation','MORTGAGE','F','F2','11 August 2021','$35,000.0','0.21','939.41','$55,106.0'],
+    ['698163','home improvement','MORTGAGE','G','G2','11 March 2021','$35,000.0','0.20','936.66','$54,774.0'],
+    ['762870','Debt consolidation','OWN','E','E4','11 May 2021','$35,000.0','0.19','913.52','$54,746.0'],
+    ['768153','home improvement','MORTGAGE','F','F2','11 June 2021','$35,000.0','0.21','939.41','$54,715.0'],
+    ['1057239','Debt consolidation','RENT','E','E3','11 December 2021','$35,000.0','0.19','916.03','$54,427.0'],
+    ['1034299','credit card','MORTGAGE','E','E3','11 December 2021','$35,000.0','0.19','916.03','$54,287.0'],
+    ['1008529','Debt consolidation','MORTGAGE','E','E5','11 November 2021','$35,000.0','0.20','933.14','$54,182.0'],
+    ['733401','credit card','RENT','G','G4','11 April 2021','$35,000.0','0.21','951.21','$54,132.0'],
+    ['821705','Debt consolidation','MORTGAGE','E','E4','11 July 2021','$35,000.0','0.19','913.52','$54,112.0'],
+    ['970684','Debt consolidation','RENT','E','E4','11 October 2021','$35,000.0','0.20','925.54','$54,005.0']
+  ]
+};
+
+const tooltip=document.getElementById('tooltip');
+function showTip(e,html){tooltip.innerHTML=html;tooltip.style.display='block';moveTip(e)}
+function moveTip(e){const pad=14;let x=e.clientX+pad,y=e.clientY+pad;const r=tooltip.getBoundingClientRect();if(x+r.width>innerWidth-4)x=e.clientX-r.width-pad;if(y+r.height>innerHeight-4)y=e.clientY-r.height-pad;tooltip.style.left=x+'px';tooltip.style.top=y+'px'}
+function hideTip(){tooltip.style.display='none'}
+function bindTip(el,html){el.addEventListener('mouseenter',e=>showTip(e,typeof html==='function'?html():html));el.addEventListener('mousemove',moveTip);el.addEventListener('mouseleave',hideTip)}
+function bindSelect(el,host){el.addEventListener('click',()=>{const was=el.classList.contains('selected');host.querySelectorAll('.interactive-shape').forEach(x=>x.classList.remove('selected'));host.classList.remove('focus-dim');if(!was){el.classList.add('selected');host.classList.add('focus-dim')}})}
+
+function renderKpis(){const host=document.getElementById('kpiRow');host.innerHTML=dashboardData.kpis.map(k=>`<div class="kpi ${k.primary?'primary':''}"><div class="kpi-title">${k.title}</div><div class="kpi-value">${k.value}</div><div class="kpi-subhead"><span>MTD</span><span>MOM</span></div><div class="kpi-subvalue"><span>${k.mtd}</span><span>${k.mom}</span></div></div>`).join('')}
+function renderFilters(page){const f=document.getElementById('filters');f.className='filters '+(page==='overview'?'overview-filters':page==='details'?'details-filters':'');
+ const filters=page==='summary'?[['State',['All','California','Texas','Florida','New York']],['Grade',['All','A','B','C','D','E','F','G']],['Purpose',['All','Debt consolidation','credit card','home improvement','small business']]]:
+ page==='overview'?[['Select Measure',['Total Funded Amount']],['State',['All','California','Texas','Florida','New York']],['Grade',['All','A','B','C','D','E','F','G']],['Good v Bad Loan',['All','Good Loan','Bad Loan']]]:
+ [['State',['All','California','Texas','Florida','New York']],['Grade',['All','A','B','C','D','E','F','G']],['Good v Bad Loan',['All','Good Loan','Bad Loan']]];
+ f.innerHTML=filters.map((x,i)=>`<div class="filter-block"><div class="filter-label">${x[0]}</div><div class="filter-shell"><select class="pbi-select" data-filter="${x[0]}">${x[1].map(o=>`<option>${o}</option>`).join('')}</select><span class="select-arrow"></span>${page==='overview'&&i===3?'<span class="filter-scroll"></span>':''}</div></div>`).join('');
+ f.querySelectorAll('select').forEach(s=>s.addEventListener('change',()=>{ if(s.dataset.filter==='State' && currentPage==='overview') highlightMapState(s.value); }));
+}
+
+function polar(cx,cy,r,a){const rad=(a-90)*Math.PI/180;return [cx+r*Math.cos(rad),cy+r*Math.sin(rad)]}
+function arcPath(cx,cy,r,start,end){const s=polar(cx,cy,r,end),e=polar(cx,cy,r,start),large=end-start<=180?0:1;return `M ${s[0]} ${s[1]} A ${r} ${r} 0 ${large} 0 ${e[0]} ${e[1]}`}
+function renderDonut(hostId,pct,type){const host=document.getElementById(hostId);const good=type==='good';const r=82,c=102.5,w=18,start=0,end=pct/100*360;host.innerHTML=`<svg class="donut-svg" viewBox="0 0 205 205"><circle cx="${c}" cy="${c}" r="${r}" fill="none" stroke="#858585" stroke-width="${w}"/><path class="donut-ring" d="${arcPath(c,c,r,start,end)}" fill="none" stroke="${good?'#f5d44f':'#8fc8ff'}" stroke-width="${w}" stroke-linecap="butt"/><text x="${c}" y="${c+3}" class="donut-center">${pct.toFixed(2)}%</text></svg>`;bindTip(host.querySelector('.donut-ring'),`<b>${good?'Good Loan':'Bad Loan'}</b><br>${pct.toFixed(2)}%`)}
+function renderMetrics(hostId,data){document.getElementById(hostId).innerHTML=data.map(m=>`<div class="metric-row"><div class="metric-label">${m[0]}</div><div class="metric-value">${m[1]}</div></div>`).join('')}
+function renderSummaryTable(){const h=['Loan_Status','Total Loan<br>Applications','Total Funded<br>Amount','Total Amount<br>Received','MTD Funded<br>Amount','MTD Total Amount<br>Received','Average Interest<br>Rate','Average DTI'];const col=['10%','12%','14%','14%','14%','14%','11%','10%'];let html='<colgroup>'+col.map(w=>`<col style="width:${w}">`).join('')+'</colgroup><thead><tr>'+h.map(x=>`<th>${x}</th>`).join('')+'</tr></thead><tbody>';dashboardData.summary.status.forEach((r,i)=>{html+=`<tr class="${i===3?'total':''}">`+r.map(v=>`<td>${v}</td>`).join('')+'</tr>'});html+='</tbody>';document.getElementById('summaryTable').innerHTML=html}
+
+function svgEl(name,attrs={}){const e=document.createElementNS('http://www.w3.org/2000/svg',name);Object.entries(attrs).forEach(([k,v])=>e.setAttribute(k,v));return e}
+function makeSVG(host,viewW,viewH){host.innerHTML='';const s=svgEl('svg',{viewBox:`0 0 ${viewW} ${viewH}`,preserveAspectRatio:'none'});host.appendChild(s);return s}
+function drawMonth(){const host=document.getElementById('monthChart'),svg=makeSVG(host,442,225),data=dashboardData.overview.monthly;const left=18,right=6,top=20,bottom=24,w=442-left-right,h=225-top-bottom,max=56,min=20;
+ const pts=data.map((d,i)=>[left+i*w/(data.length-1),top+(max-d[1])/(max-min)*h]);
+ let area=`M ${pts[0][0]} ${top+h} `+pts.map(p=>`L ${p[0]} ${p[1]}`).join(' ')+` L ${pts[pts.length-1][0]} ${top+h} Z`;svg.appendChild(svgEl('path',{d:area,fill:'#0a5da8',opacity:'0.96'}));
+ let line='M '+pts.map((p,i)=>`${i?'L':''} ${p[0]} ${p[1]}`).join(' ');svg.appendChild(svgEl('path',{d:line,fill:'none',stroke:'#118dff','stroke-width':3}));
+ svg.appendChild(svgEl('line',{x1:left,y1:top+h,x2:left+w,y2:top+h,stroke:'#7c96ad','stroke-width':1}));
+ data.forEach((d,i)=>{const p=pts[i];const c=svgEl('circle',{cx:p[0],cy:p[1],r:5.5,fill:'#118dff',class:'interactive-shape'});svg.appendChild(c);bindTip(c,`<b>${d[0]}</b><br>Total Funded Amount: $${d[1]}M`);bindSelect(c,host);const t=svgEl('text',{x:p[0],y:p[1]-14,'text-anchor':'middle',class:'chart-label'});t.textContent='$'+d[1]+'M';svg.appendChild(t);const x=svgEl('text',{x:p[0],y:221,'text-anchor':'middle',class:'axis-text'});x.textContent=d[0];svg.appendChild(x)})
+}
+function drawHBar(hostId,data,max,color,valueFmt,labelWidth){const host=document.getElementById(hostId),svg=makeSVG(host,hostId==='empChart'?442:390,246),W=hostId==='empChart'?442:390,H=246,left=hostId==='empChart'?73:109,right=10,top=9,row=24,barH=18;
+ const valueReserve=hostId==='empChart'?69:77; const plotW=W-left-right-valueReserve;
+ data.forEach((d,i)=>{const y=top+i*row;const label=svgEl('text',{x:left-10,y:y+13,'text-anchor':'end',class:'axis-text'});label.textContent=d[0];svg.appendChild(label);const bw=Math.max(5,d[1]/max*plotW);const rect=svgEl('rect',{x:left,y:y,width:bw,height:barH,fill:color,class:'interactive-shape'});svg.appendChild(rect);const val=valueFmt(d[1]);const bgW=val.length*7.2+16;const idealX=left+bw+5;const maxX=W-right-bgW-15;const bx=Math.min(idealX,maxX);const bg=svgEl('rect',{x:bx,y:y-1,width:bgW,height:22,rx:5,ry:5,class:'bar-label-bg'});svg.appendChild(bg);const txt=svgEl('text',{x:bx+7,y:y+14,class:'chart-label'});txt.textContent=val;svg.appendChild(txt);bindTip(rect,`<b>${d[0].replace('...','')}</b><br>${hostId==='empChart'?'Total Funded Amount: $'+d[1]+'M':'Total Funded Amount: $'+d[1].toFixed(2)+'bn'}`);bindSelect(rect,host)})
+}
+function drawTerm(){const host=document.getElementById('termChart'),svg=makeSVG(host,279,225),cx=139,cy=126,r=61,w=20,p=62.66;svg.appendChild(svgEl('circle',{cx,cy,r,fill:'none',stroke:'#3d48ad','stroke-width':w}));const arc=svgEl('path',{d:arcPath(cx,cy,r,0,p/100*360),fill:'none',stroke:'#8fc8ff','stroke-width':w,class:'interactive-shape'});svg.appendChild(arc);bindTip(arc,'<b>36 months</b><br>$273.0M (62.66%)');bindSelect(arc,host)}
+function drawTreemap(){const h=document.getElementById('homeTreemap');h.innerHTML=`<div class="tree-cell mortgage interactive-shape" style="background:#e669b9"><span>MORTGAGE</span><span class="tree-value">$219.3M</span></div><div class="tree-cell rent interactive-shape" style="background:#118dff"><span>RENT</span><span class="tree-value">$185.8M</span></div><div class="tree-cell own interactive-shape" style="background:linear-gradient(to bottom,#a33879 0 95.5%,#fff 95.5% 97%,#e7a07e 97% 100%)"></div>`;[...h.children].forEach((el,i)=>{bindTip(el,i===0?'<b>MORTGAGE</b><br>Total Funded Amount: $219.3M':i===1?'<b>RENT</b><br>Total Funded Amount: $185.8M':'<b>OWN</b><br>Total Funded Amount: $29.5M');bindSelect(el,h)})}
+
+function drawMap(){
+ const host=document.getElementById('stateMap'),svg=makeSVG(host,355,207); svg.setAttribute('preserveAspectRatio','xMidYMid meet');
+ const defs=svgEl('defs'); const clip=svgEl('clipPath',{id:'usMainClip'}); clip.appendChild(svgEl('path',{d:`M198.0,6.0 L198.9,9.6 L200.6,10.7 L204.4,11.1 L209.9,12.1 L215.2,14.1 L219.6,13.3 L226.3,15.0 L228.0,14.9 L232.9,13.1 L238.0,15.4 L243.3,17.9 L247.7,20.1 L251.9,22.2 L252.4,23.9 L253.7,24.5 L253.3,25.2 L254.8,25.4 L255.9,24.7 L256.1,26.2 L257.2,27.3 L258.7,27.3 L259.5,28.1 L258.8,29.2 L264.5,32.3 L265.6,38.2 L266.7,43.8 L265.1,47.7 L262.6,51.2 L261.4,53.5 L261.3,54.2 L261.9,55.1 L263.7,56.1 L265.1,56.1 L271.4,52.7 L277.0,51.6 L284.1,48.4 L284.2,47.8 L283.7,45.8 L282.8,44.5 L285.3,43.5 L290.6,43.4 L295.6,43.4 L297.3,40.9 L298.0,40.4 L303.7,35.7 L306.1,34.5 L314.4,34.5 L324.4,34.5 L324.9,32.9 L326.7,32.5 L329.0,31.5 L330.9,28.6 L332.5,23.5 L336.7,18.6 L338.5,20.3 L342.1,19.2 L344.5,21.1 L344.5,30.0 L348.1,33.6 L349.0,35.8 L343.2,38.9 L337.6,41.2 L331.9,43.1 L329.0,46.9 L328.1,48.4 L328.1,51.8 L329.9,55.3 L332.1,55.5 L331.5,53.1 L333.2,54.5 L332.7,56.4 L329.1,57.4 L326.5,57.3 L322.5,58.4 L320.1,58.8 L316.9,59.1 L312.4,61.0 L320.4,59.7 L322.0,61.0 L314.4,62.9 L310.9,62.9 L311.1,62.1 L309.5,63.9 L311.1,64.2 L309.9,68.9 L305.9,73.9 L305.5,72.2 L304.3,71.9 L302.6,70.3 L303.7,73.8 L305.0,74.9 L305.1,77.4 L303.4,79.9 L300.3,85.1 L299.8,84.9 L301.5,80.4 L298.7,77.9 L298.1,72.6 L297.1,75.4 L298.2,79.5 L294.6,78.5 L298.4,80.6 L298.6,86.7 L300.2,87.2 L300.7,89.4 L301.5,95.9 L298.0,100.8 L292.4,102.7 L288.9,106.5 L286.2,106.9 L283.4,109.3 L282.6,111.5 L276.7,115.7 L273.6,118.8 L271.1,122.7 L270.2,127.3 L271.2,131.8 L273.0,137.4 L275.4,142.0 L275.4,144.8 L278.0,152.3 L277.8,156.7 L277.6,159.2 L276.2,163.2 L274.6,164.0 L272.0,163.2 L271.1,160.4 L269.0,158.9 L266.2,153.3 L263.6,148.3 L262.8,145.8 L263.9,141.4 L262.4,137.9 L258.2,132.4 L256.1,131.4 L250.6,134.4 L249.6,134.1 L247.0,131.0 L243.6,129.4 L237.5,130.2 L232.7,129.5 L228.5,130.0 L226.3,131.0 L227.3,132.7 L227.2,135.3 L228.3,136.6 L227.3,137.5 L225.3,136.5 L223.3,137.8 L219.3,137.6 L215.3,134.1 L210.5,134.9 L206.6,133.4 L203.2,133.9 L198.7,135.4 L193.7,140.2 L188.3,143.0 L185.4,146.1 L184.1,149.1 L184.1,153.5 L184.3,156.7 L185.4,158.9 L183.3,159.1 L179.4,157.6 L175.2,155.6 L173.7,152.6 L172.5,148.0 L169.3,144.3 L167.4,140.5 L164.7,136.0 L160.9,133.5 L156.4,133.6 L153.0,138.7 L148.5,136.8 L145.7,134.8 L144.3,131.2 L142.6,127.8 L139.3,125.0 L136.6,122.9 L134.6,120.6 L125.2,120.6 L125.2,123.3 L120.9,123.3 L110.1,123.3 L97.7,118.8 L89.5,115.6 L90.0,114.3 L83.2,115.0 L77.0,115.5 L76.1,112.2 L72.6,108.5 L70.0,107.7 L69.4,105.8 L66.4,105.5 L64.5,103.8 L59.4,103.1 L58.0,102.1 L57.4,98.5 L52.1,92.0 L47.6,82.9 L47.8,81.4 L45.4,79.3 L41.2,73.8 L40.5,68.5 L37.6,65.0 L38.8,59.6 L38.6,54.0 L36.8,49.0 L39.0,42.9 L39.6,37.0 L40.3,31.1 L39.3,22.4 L37.6,16.8 L36.0,13.8 L36.7,12.6 L44.5,14.8 L47.4,20.9 L48.7,19.2 L47.9,13.9 L46.0,8.5 L61.4,8.5 L77.5,8.5 L82.8,8.5 L99.4,8.5 L115.4,8.5 L131.6,8.5 L147.9,8.5 L166.3,8.5 L184.9,8.5 L196.1,8.5 L196.1,6.0 L198.0,6.0 Z`})); defs.appendChild(clip); svg.appendChild(defs);
+ const base=svgEl('path',{d:`M198.0,6.0 L198.9,9.6 L200.6,10.7 L204.4,11.1 L209.9,12.1 L215.2,14.1 L219.6,13.3 L226.3,15.0 L228.0,14.9 L232.9,13.1 L238.0,15.4 L243.3,17.9 L247.7,20.1 L251.9,22.2 L252.4,23.9 L253.7,24.5 L253.3,25.2 L254.8,25.4 L255.9,24.7 L256.1,26.2 L257.2,27.3 L258.7,27.3 L259.5,28.1 L258.8,29.2 L264.5,32.3 L265.6,38.2 L266.7,43.8 L265.1,47.7 L262.6,51.2 L261.4,53.5 L261.3,54.2 L261.9,55.1 L263.7,56.1 L265.1,56.1 L271.4,52.7 L277.0,51.6 L284.1,48.4 L284.2,47.8 L283.7,45.8 L282.8,44.5 L285.3,43.5 L290.6,43.4 L295.6,43.4 L297.3,40.9 L298.0,40.4 L303.7,35.7 L306.1,34.5 L314.4,34.5 L324.4,34.5 L324.9,32.9 L326.7,32.5 L329.0,31.5 L330.9,28.6 L332.5,23.5 L336.7,18.6 L338.5,20.3 L342.1,19.2 L344.5,21.1 L344.5,30.0 L348.1,33.6 L349.0,35.8 L343.2,38.9 L337.6,41.2 L331.9,43.1 L329.0,46.9 L328.1,48.4 L328.1,51.8 L329.9,55.3 L332.1,55.5 L331.5,53.1 L333.2,54.5 L332.7,56.4 L329.1,57.4 L326.5,57.3 L322.5,58.4 L320.1,58.8 L316.9,59.1 L312.4,61.0 L320.4,59.7 L322.0,61.0 L314.4,62.9 L310.9,62.9 L311.1,62.1 L309.5,63.9 L311.1,64.2 L309.9,68.9 L305.9,73.9 L305.5,72.2 L304.3,71.9 L302.6,70.3 L303.7,73.8 L305.0,74.9 L305.1,77.4 L303.4,79.9 L300.3,85.1 L299.8,84.9 L301.5,80.4 L298.7,77.9 L298.1,72.6 L297.1,75.4 L298.2,79.5 L294.6,78.5 L298.4,80.6 L298.6,86.7 L300.2,87.2 L300.7,89.4 L301.5,95.9 L298.0,100.8 L292.4,102.7 L288.9,106.5 L286.2,106.9 L283.4,109.3 L282.6,111.5 L276.7,115.7 L273.6,118.8 L271.1,122.7 L270.2,127.3 L271.2,131.8 L273.0,137.4 L275.4,142.0 L275.4,144.8 L278.0,152.3 L277.8,156.7 L277.6,159.2 L276.2,163.2 L274.6,164.0 L272.0,163.2 L271.1,160.4 L269.0,158.9 L266.2,153.3 L263.6,148.3 L262.8,145.8 L263.9,141.4 L262.4,137.9 L258.2,132.4 L256.1,131.4 L250.6,134.4 L249.6,134.1 L247.0,131.0 L243.6,129.4 L237.5,130.2 L232.7,129.5 L228.5,130.0 L226.3,131.0 L227.3,132.7 L227.2,135.3 L228.3,136.6 L227.3,137.5 L225.3,136.5 L223.3,137.8 L219.3,137.6 L215.3,134.1 L210.5,134.9 L206.6,133.4 L203.2,133.9 L198.7,135.4 L193.7,140.2 L188.3,143.0 L185.4,146.1 L184.1,149.1 L184.1,153.5 L184.3,156.7 L185.4,158.9 L183.3,159.1 L179.4,157.6 L175.2,155.6 L173.7,152.6 L172.5,148.0 L169.3,144.3 L167.4,140.5 L164.7,136.0 L160.9,133.5 L156.4,133.6 L153.0,138.7 L148.5,136.8 L145.7,134.8 L144.3,131.2 L142.6,127.8 L139.3,125.0 L136.6,122.9 L134.6,120.6 L125.2,120.6 L125.2,123.3 L120.9,123.3 L110.1,123.3 L97.7,118.8 L89.5,115.6 L90.0,114.3 L83.2,115.0 L77.0,115.5 L76.1,112.2 L72.6,108.5 L70.0,107.7 L69.4,105.8 L66.4,105.5 L64.5,103.8 L59.4,103.1 L58.0,102.1 L57.4,98.5 L52.1,92.0 L47.6,82.9 L47.8,81.4 L45.4,79.3 L41.2,73.8 L40.5,68.5 L37.6,65.0 L38.8,59.6 L38.6,54.0 L36.8,49.0 L39.0,42.9 L39.6,37.0 L40.3,31.1 L39.3,22.4 L37.6,16.8 L36.0,13.8 L36.7,12.6 L44.5,14.8 L47.4,20.9 L48.7,19.2 L47.9,13.9 L46.0,8.5 L61.4,8.5 L77.5,8.5 L82.8,8.5 L99.4,8.5 L115.4,8.5 L131.6,8.5 L147.9,8.5 L166.3,8.5 L184.9,8.5 L196.1,8.5 L196.1,6.0 L198.0,6.0 Z`,fill:'#efbca7',stroke:'#6f6b68','stroke-width':1,class:'map-state interactive-shape','data-name':'United States'}); svg.appendChild(base);
+ const cg=svgEl('g',{'clip-path':'url(#usMainClip)'}); svg.appendChild(cg);
+ const regions=[
+  {name:'California',d:'M36 50 L48 43 L54 74 L61 103 L54 118 L47 112 L42 95 L38 78 Z',fill:'#c96e34'},
+  {name:'Texas',d:'M142 104 L183 103 L203 118 L205 140 L186 145 L171 138 L160 150 L146 136 Z',fill:'#d98b6c'},
+  {name:'Florida',d:'M258 133 L276 140 L279 157 L276 164 L271 160 L266 151 Z',fill:'#dc987d'},
+  {name:'New York',d:'M294 44 L319 39 L326 48 L312 60 L297 59 Z',fill:'#da9277'},
+  {name:'Washington',d:'M38 9 L76 9 L75 31 L45 28 Z',fill:'#e6a58c'},
+  {name:'North Dakota',d:'M174 9 L210 12 L209 36 L174 35 Z',fill:'#c7c4ba'},
+  {name:'South Dakota',d:'M173 36 L208 36 L208 61 L172 60 Z',fill:'#d2c2b5'},
+  {name:'Georgia',d:'M263 108 L282 108 L286 132 L271 138 L260 125 Z',fill:'#e2a187'}
+ ];
+ regions.forEach(r=>{const p=svgEl('path',{d:r.d,fill:r.fill,class:'map-state interactive-shape','data-name':r.name});cg.appendChild(p);bindTip(p,`<b>${r.name}</b><br>Total Funded Amount`);bindSelect(p,host)});
+ const lines=[
+ ['M47 31 L76 31 L76 62 L55 62'],['M76 9 L76 108'],['M102 9 L102 118'],['M127 9 L127 121'],['M151 9 L151 128'],['M173 9 L173 133'],['M209 12 L209 132'],['M232 14 L232 130'],['M254 24 L253 126'],['M276 44 L274 119'],['M295 43 L293 110'],
+ ['M39 36 L151 36'],['M44 61 L232 61'],['M54 86 L252 86'],['M72 108 L258 108'],['M103 120 L232 120'],['M151 36 L173 60'],['M209 61 L232 86'],['M232 86 L253 108'],['M254 86 L278 74'],['M275 74 L302 71'],['M274 95 L300 89'],['M257 108 L287 103'],['M232 120 L258 132']
+ ];
+ lines.forEach(x=>cg.appendChild(svgEl('path',{d:x[0],fill:'none',stroke:'#6f6b68','stroke-width':.8,'vector-effect':'non-scaling-stroke','pointer-events':'none'})));
+ const ak=svgEl('path',{d:`M45.7,190.4 L43.7,191.6 L42.7,190.8 L42.4,189.3 L44.2,188.1 L45.3,187.6 L46.6,187.9 L47.5,188.8 L45.7,190.4 Z M20.5,181.5 L19.2,182.0 L17.9,181.4 L16.7,180.5 L18.7,180.0 L20.3,180.2 L20.5,181.5 Z M8.1,169.1 L9.4,169.7 L10.6,169.4 L12.2,170.2 L14.2,170.7 L14.1,171.0 L12.5,171.7 L11.0,171.0 L10.2,170.4 L8.5,170.6 L8.0,170.3 L8.1,169.1 Z M41.6,145.7 L43.1,147.1 L43.9,146.5 L47.3,146.7 L47.2,147.4 L50.3,148.0 L52.3,147.6 L56.6,148.6 L60.4,148.9 L62.0,149.4 L64.7,148.8 L67.7,149.8 L69.9,150.2 L69.9,162.1 L69.9,180.2 L71.8,180.3 L73.8,181.2 L75.2,182.6 L77.0,184.7 L78.9,182.9 L81.0,181.9 L82.0,183.5 L83.4,184.8 L85.2,186.2 L86.5,188.5 L88.5,192.2 L91.9,194.2 L92.0,196.2 L90.9,197.7 L89.8,196.5 L88.0,195.5 L87.4,192.7 L84.8,190.2 L83.8,187.2 L81.8,186.9 L78.6,186.9 L76.3,186.0 L72.1,182.6 L70.2,182.0 L66.7,180.9 L63.9,181.2 L60.0,179.7 L57.6,178.4 L55.3,179.0 L55.8,181.2 L54.7,181.4 L52.3,182.1 L50.6,183.2 L48.3,183.9 L48.0,182.0 L48.9,178.9 L51.1,177.9 L50.5,177.1 L48.0,178.9 L46.6,181.0 L43.7,183.2 L45.2,184.8 L43.3,187.1 L41.1,188.4 L39.1,189.4 L38.6,190.8 L35.5,192.4 L34.8,193.9 L32.5,195.3 L31.1,195.1 L29.2,195.9 L27.2,197.0 L25.5,198.1 L22.1,199.0 L21.8,198.5 L24.0,197.0 L25.9,196.0 L28.1,194.3 L30.6,193.9 L31.5,192.6 L34.3,190.7 L34.8,190.0 L36.3,188.9 L36.6,186.5 L37.6,184.6 L35.3,185.6 L34.7,185.0 L33.6,186.2 L32.3,184.6 L31.7,185.7 L31.0,184.1 L29.0,185.4 L27.7,185.4 L27.6,183.5 L27.9,182.3 L26.6,181.2 L24.0,181.8 L22.3,180.3 L20.9,179.6 L20.9,177.8 L19.4,176.4 L20.2,174.6 L21.8,172.8 L22.5,171.2 L24.1,170.9 L25.5,171.4 L27.1,169.9 L28.6,170.2 L30.1,169.2 L29.8,167.7 L28.6,167.2 L30.1,165.9 L28.9,166.0 L26.8,166.7 L26.1,167.4 L24.6,166.7 L21.7,167.0 L18.8,166.2 L17.9,165.0 L15.4,163.1 L18.2,161.8 L22.7,160.2 L24.4,160.2 L24.1,161.8 L28.3,161.7 L26.7,159.7 L24.2,158.5 L22.8,156.9 L20.9,155.6 L18.1,154.6 L19.2,152.9 L22.8,152.8 L25.3,151.3 L25.8,149.8 L27.9,148.3 L29.8,147.9 L33.6,146.5 L35.5,146.7 L38.6,145.0 L41.6,145.7 Z`,fill:'#efbca7',stroke:'#6f6b68','stroke-width':1,class:'map-state interactive-shape','data-name':'Alaska'}); svg.appendChild(ak); bindTip(ak,'<b>Alaska</b><br>Total Funded Amount'); bindSelect(ak,host);
+ const hi=svgEl('path',{d:`M138.4,200.9 L137.1,202.0 L134.8,201.1 L135.1,199.3 L133.6,197.0 L134.0,196.3 L135.6,195.3 L135.0,194.0 L135.5,193.5 L136.2,193.6 L139.6,194.6 L141.2,195.2 L142.7,196.0 L145.0,198.3 L144.8,198.6 L141.3,200.0 L138.4,200.9 Z M133.5,191.1 L130.5,191.5 L129.0,190.2 L127.9,189.7 L127.8,189.3 L128.7,188.7 L131.9,189.3 L134.3,190.3 L133.5,191.1 Z M127.4,187.7 L127.1,188.4 L122.3,188.2 L123.0,187.4 L127.4,187.7 Z M119.4,186.8 L118.9,187.1 L118.2,187.1 L115.1,186.8 L113.9,185.4 L113.6,185.2 L116.0,184.3 L116.8,184.7 L119.4,186.8 Z M104.1,182.6 L103.0,183.2 L100.0,182.1 L100.5,181.6 L101.8,181.0 L103.9,181.1 L104.1,182.6 Z`,fill:'#efbca7',stroke:'#6f6b68','stroke-width':1,class:'map-state interactive-shape','data-name':'Hawaii'}); svg.appendChild(hi); bindTip(hi,'<b>Hawaii</b><br>Total Funded Amount'); bindSelect(hi,host);
+ bindTip(base,'<b>United States</b><br>Total Funded Amount by State');
+}
+function renderPreciseUSMap(mapData){
+ if(!mapData||!Array.isArray(mapData.locations)||!mapData.viewBox)return;
+ const host=document.getElementById('stateMap'); if(!host)return;
+ host.innerHTML='';
+ const svg=svgEl('svg',{viewBox:mapData.viewBox,preserveAspectRatio:'xMidYMid meet','aria-label':'Total Funded Amount by State'}); host.appendChild(svg);
+ const palette={ca:'#c96e34',tx:'#d98b6c',fl:'#dc987d',ny:'#da9277',wa:'#e6a58c',or:'#e9aa91',nv:'#eab29d',az:'#efbca7',co:'#efbca7',ut:'#efbca7',nm:'#efbca7',mt:'#e8ae98',nd:'#c7c4ba',sd:'#d1c4b8',mn:'#efbca7',wi:'#e4a78d',mi:'#e5a68c',il:'#efbca7',ga:'#e8a88f',nc:'#dea086',sc:'#e3a38a',pa:'#e3a38a',nj:'#d99073',ma:'#da9277',ak:'#efbca7',hi:'#efbca7'};
+ const excluded=new Set(['as','gu','mp','pr','vi']);
+ mapData.locations.forEach(loc=>{
+   const id=String(loc.id||loc.name||'').toLowerCase(); if(excluded.has(id))return;
+   const node=svgEl('path',{d:loc.path,fill:palette[id]||'#efbca7',stroke:'#6f6b68','stroke-width':1,class:'map-state interactive-shape','data-name':loc.name||id.toUpperCase()});
+   svg.appendChild(node);
+   bindTip(node,`<b>${loc.name||id.toUpperCase()}</b><br>Total Funded Amount`); bindSelect(node,host);
+ });
+ if(currentPage==='overview'){
+   const stateSelect=document.querySelector('#filters select[data-filter="State"]');
+   if(stateSelect)highlightMapState(stateSelect.value);
+ }
+}
+function highlightMapState(name){const arr=[...document.querySelectorAll('#stateMap .map-state')];arr.forEach(x=>{x.classList.remove('selected','selected-state');if(x.dataset.name){x.style.stroke='#6f6b68';x.style.strokeWidth='1.2'}});if(name!=='All'){const node=arr.find(x=>x.dataset.name===name);if(node){node.classList.add('selected','selected-state');node.style.stroke='#fff';node.style.strokeWidth='2'}}}
+
+function renderDetails(){const heads=['ID','Purpose','Home Ownership','Grade','Sub Grade','Issue Date','Funded Amount','Int Rate','Installment','Amount Received'];const widths=['7%','14.5%','11.5%','6.5%','8%','13%','11.5%','8%','9%','11%'];let h='<colgroup>'+widths.map(w=>`<col style="width:${w}">`).join('')+'</colgroup><thead><tr>'+heads.map((x,i)=>`<th class="${i>=6?'num':''}">${x}</th>`).join('')+'</tr></thead><tbody>';dashboardData.details.forEach(r=>{h+='<tr>'+r.map((v,i)=>`<td class="${i===0||i>=6?'num':''}">${v}</td>`).join('')+'</tr>'});h+='</tbody>';document.getElementById('detailsTable').innerHTML=h}
+
+let currentPage='summary';
+function showPage(page){currentPage=page;document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id===page));document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.page===page));document.getElementById('pageTitle').textContent=page.toUpperCase();document.getElementById('nav').classList.toggle('detail-layout',page==='details');renderFilters(page);}
+function init(){renderKpis();renderFilters('summary');renderDonut('goodDonut',dashboardData.summary.good.pct,'good');renderDonut('badDonut',dashboardData.summary.bad.pct,'bad');renderMetrics('goodMetrics',dashboardData.summary.good.metrics);renderMetrics('badMetrics',dashboardData.summary.bad.metrics);renderSummaryTable();drawMonth();drawMap();drawTerm();drawHBar('empChart',dashboardData.overview.emp,116,'#e68f96',v=>'$'+v+'M');drawHBar('purposeChart',dashboardData.overview.purpose,.23,'#f000c8',v=>'$'+v.toFixed(2)+'bn');drawTreemap();renderDetails();document.querySelectorAll('.nav-btn').forEach(b=>b.addEventListener('click',()=>showPage(b.dataset.page)));resizeDashboard()}
+function resizeDashboard(){const baseW=1442,baseH=810;const s=Math.min(innerWidth/baseW,innerHeight/baseH);const d=document.getElementById('dashboard');d.style.transform=`scale(${s})`;d.style.left=Math.round((innerWidth-baseW*s)/2)+'px';d.style.top=Math.round((innerHeight-baseH*s)/2)+'px';}
+window.addEventListener('resize',resizeDashboard);window.addEventListener('DOMContentLoaded',init);
+</script>
+
+<script type="module">
+(async()=>{
+  try{
+    const mod=await import('https://esm.sh/@svg-maps/usa.states-territories@2.0.0');
+    const mapData=mod.default||mod;
+    window.__preciseUsMap=mapData;
+    if(typeof window.renderPreciseUSMap==='function') window.renderPreciseUSMap(mapData);
+  }catch(e){ /* deterministic inline vector fallback remains active */ }
+})();
+</script>
+</body>
+</html>
