@@ -295,7 +295,7 @@ export const experience: Experience[] = [
     company: "Plan Thy Business",
     roles: [
       { title: "Freelance Data Analyst", dates: "Jul 2024 — Present" },
-      { title: "Associate Business Analyst", dates: "Mar 2022 — Jun 2024" },
+      { title: "Associate Data Analyst", dates: "Mar 2022 — Jun 2024" },
     ],
     summary:
       "Across six client engagements, I have worked with more than 50 Excel and CSV files for finance, operations, CRM, and performance reporting. My responsibilities include checking records, investigating differences between figures, and building Power BI reports for founders and project managers. I adapt the measures and level of detail to each audience’s reporting needs.",
